@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function VerifyPage() {
+function VerifyContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'idle'>('idle');
   const [message, setMessage] = useState('');
   const [isResending, setIsResending] = useState(false);
@@ -127,7 +127,7 @@ export default function VerifyPage() {
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                transition={{ delay: 0.2, type: "spring" as const, stiffness: 200 }}
                 className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10"
               >
                 {getStatusIcon()}
@@ -277,5 +277,33 @@ export default function VerifyPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <Card className="border-0 shadow-xl">
+          <CardHeader className="space-y-1 text-center">
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+              <RefreshCw className="h-16 w-16 text-primary animate-spin" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Loading...</CardTitle>
+            <CardDescription className="text-base">
+              Please wait while we load the verification page.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <VerifyContent />
+    </Suspense>
   );
 }

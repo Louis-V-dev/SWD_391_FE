@@ -1,14 +1,20 @@
-// User Types
+// User Types - Updated to match backend
 export enum UserType {
   CONSUMER = 'CONSUMER',
+  COLLECTOR = 'COLLECTOR', 
   BRAND = 'BRAND',
-  RECYCLER = 'RECYCLER',
-  DESIGNER = 'DESIGNER',
-  ADMIN = 'ADMIN'
+  ADMIN = 'ADMIN',
+  MODERATOR = 'MODERATOR'
+}
+
+export enum Role {
+  USER = 'USER',
+  ADMIN = 'ADMIN', 
+  STAFF = 'STAFF'
 }
 
 export interface User {
-  userId: number;
+  userId: string; // Changed from number to string (UUID)
   email: string;
   firstName: string;
   lastName: string;
@@ -16,21 +22,25 @@ export interface User {
   dateOfBirth?: string;
   gender?: string;
   userType: UserType;
+  role: Role; // Added role field
   sustainabilityScore: number;
+  sustainabilityPoints: number; // Added points field
+  trustScore: number; // Added trust score
   createdAt: string;
   updatedAt: string;
   isVerified: boolean;
   isActive: boolean;
   avatarUrl?: string;
   emailVerified: boolean;
-  twoFactorEnabled: boolean;
-  loginAlertsEnabled: boolean;
+  phoneVerified: boolean; // Added phone verification
+  isBanned: boolean; // Added banned status
   username?: string;
+  bio?: string; // Added bio field
 }
 
 // Authentication Request Types
 export interface LoginRequest {
-  usernameOrEmail: string;
+  emailOrUsername: string; // Changed from usernameOrEmail to match backend
   password: string;
 }
 
@@ -43,31 +53,39 @@ export interface RegisterRequest {
   dateOfBirth?: string;
   gender?: string;
   username?: string;
+  userType?: UserType; // Added user type
 }
 
 // Authentication Response Types
 export interface LoginResponse {
   token: string;
   tokenType: string;
-  userId: number;
+  userId: string; // Changed from number to string (UUID)
   firstName: string;
   lastName: string;
   email: string;
   username?: string;
   userType: UserType;
+  role: Role; // Added role field
   sustainabilityScore: number;
+  sustainabilityPoints: number; // Added points field
   emailVerified: boolean;
+  phoneVerified: boolean; // Added phone verification
 }
 
 export interface UserResponse {
-  userId: number;
+  userId: string; // Changed from number to string (UUID)
   firstName: string;
   lastName: string;
   email: string;
   username?: string;
   userType: UserType;
+  role: Role; // Added role field
   sustainabilityScore: number;
+  sustainabilityPoints: number; // Added points field
   emailVerified: boolean;
+  phoneVerified: boolean; // Added phone verification
   avatarUrl?: string;
   createdAt: string;
+  updatedAt: string;
 }

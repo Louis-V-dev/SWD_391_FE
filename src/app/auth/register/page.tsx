@@ -76,7 +76,7 @@ export default function RegisterPage() {
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                transition={{ delay: 0.2, type: "spring" as const, stiffness: 200 }}
                 className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10"
               >
                 <Recycle className="h-8 w-8 text-primary" />
@@ -128,7 +128,7 @@ export default function RegisterPage() {
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                transition={{ delay: 0.2, type: "spring" as const, stiffness: 200 }}
                 className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary"
               >
                 <Recycle className="h-6 w-6 text-primary-foreground" />

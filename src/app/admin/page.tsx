@@ -39,7 +39,7 @@ const stats = [
   },
   {
     name: 'Revenue',
-    value: ',231',
+    value: '$2,231',
     change: '+15%',
     changeType: 'positive',
     icon: DollarSign,
@@ -63,21 +63,6 @@ const recentActivities = [
     time: '15 minutes ago',
     type: 'purchase',
   },
-  {
-    id: 3,
-    user: 'Emma Wilson',
-    action: 'verified their account',
-    time: '1 hour ago',
-    type: 'verification',
-  },
-  {
-    id: 4,
-    user: 'David Brown',
-    action: 'rented',
-    item: 'Designer Dress',
-    time: '2 hours ago',
-    type: 'rental',
-  },
 ];
 
 export default function AdminDashboard() {
@@ -91,7 +76,7 @@ export default function AdminDashboard() {
           className="flex items-center justify-between"
         >
           <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
             <p className="text-muted-foreground">
               Welcome back! Here&apos;s what&apos;s happening with your platform.
             </p>
@@ -112,15 +97,15 @@ export default function AdminDashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 + index * 0.1 }}
             >
-              <Card hover>
+              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
                     {stat.name}
                   </CardTitle>
                   <stat.icon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <div className="text-2xl font-bold text-foreground">{stat.value}</div>
                   <div className="flex items-center text-xs text-muted-foreground">
                     {stat.changeType === 'positive' ? (
                       <ArrowUpRight className="mr-1 h-3 w-3 text-green-500" />
@@ -191,7 +176,7 @@ export default function AdminDashboard() {
                         <Activity className="h-4 w-4 text-primary" />
                       </div>
                       <div className="flex-1 space-y-1">
-                        <p className="text-sm">
+                        <p className="text-sm text-foreground">
                           <span className="font-medium">{activity.user}</span>{' '}
                           {activity.action}{' '}
                           {activity.item && (
@@ -207,61 +192,6 @@ export default function AdminDashboard() {
             </Card>
           </motion.div>
         </div>
-
-        {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>
-                Common administrative tasks
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex flex-col items-center space-y-2 p-4 rounded-lg border border-border hover:bg-accent transition-colors"
-                >
-                  <Users className="h-6 w-6 text-primary" />
-                  <span className="text-sm font-medium">Manage Users</span>
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex flex-col items-center space-y-2 p-4 rounded-lg border border-border hover:bg-accent transition-colors"
-                >
-                  <Package className="h-6 w-6 text-primary" />
-                  <span className="text-sm font-medium">Review Items</span>
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex flex-col items-center space-y-2 p-4 rounded-lg border border-border hover:bg-accent transition-colors"
-                >
-                  <ShoppingBag className="h-6 w-6 text-primary" />
-                  <span className="text-sm font-medium">Moderate Listings</span>
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex flex-col items-center space-y-2 p-4 rounded-lg border border-border hover:bg-accent transition-colors"
-                >
-                  <TrendingUp className="h-6 w-6 text-primary" />
-                  <span className="text-sm font-medium">View Analytics</span>
-                </motion.button>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
       </div>
     </AdminLayout>
   );

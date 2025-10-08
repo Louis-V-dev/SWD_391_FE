@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -39,15 +39,39 @@ const navigation = [
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const { user, logout } = useAuth();
+
+  // Prevent hydration mismatch by only rendering after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = () => {
     logout();
   };
 
+  // Get user initials safely
+  const getUserInitials = () => {
+    if (!mounted || !user) return 'AD';
+    const first = user.firstName?.charAt(0) || 'A';
+    const last = user.lastName?.charAt(0) || 'D';
+    return first + last;
+  };
+
+  const getUserName = () => {
+    if (!mounted || !user) return 'Admin User';
+    return `${user.firstName || 'Admin'} ${user.lastName || 'User'}`;
+  };
+
+  const getUserEmail = () => {
+    if (!mounted || !user) return 'admin@greenloop.com';
+    return user.email || 'admin@greenloop.com';
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex">
       {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -110,18 +134,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
           {/* User section */}
           <div className="border-t p-4">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 mb-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
                 <span className="text-sm font-medium text-primary">
-                  {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                  {getUserInitials()}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">
-                  {user?.firstName} {user?.lastName}
+                  {getUserName()}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">
-                  {user?.email}
+                  {getUserEmail()}
                 </p>
               </div>
             </div>
@@ -129,7 +153,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               variant="ghost"
               size="sm"
               onClick={handleLogout}
-              className="w-full mt-3 justify-start"
+              className="w-full justify-start"
             >
               <LogOut className="mr-2 h-4 w-4" />
               Sign out
@@ -138,8 +162,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
       </div>
 
-      {/* Main content */}
-      <div className="lg:pl-64">
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <div className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/80 backdrop-blur-sm px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-4">
@@ -175,7 +199,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
 
         {/* Page content */}
-        <main className="flex-1">
+        <main className="flex-1 bg-background">
           <div className="py-6">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               {children}

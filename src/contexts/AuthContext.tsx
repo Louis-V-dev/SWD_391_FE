@@ -68,14 +68,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         lastName: userData.lastName,
         username: userData.username,
         userType: userData.userType,
+        role: userData.role,
         sustainabilityScore: userData.sustainabilityScore,
+        sustainabilityPoints: userData.sustainabilityPoints,
+        trustScore: 5.0, // Default trust score
         emailVerified: userData.emailVerified,
+        phoneVerified: userData.phoneVerified,
         isVerified: userData.emailVerified,
         isActive: true,
+        isBanned: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        twoFactorEnabled: false,
-        loginAlertsEnabled: true,
+        bio: '',
       });
 
       // Store in cookies
@@ -87,14 +91,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         lastName: userData.lastName,
         username: userData.username,
         userType: userData.userType,
+        role: userData.role,
         sustainabilityScore: userData.sustainabilityScore,
+        sustainabilityPoints: userData.sustainabilityPoints,
+        trustScore: 5.0,
         emailVerified: userData.emailVerified,
+        phoneVerified: userData.phoneVerified,
         isVerified: userData.emailVerified,
         isActive: true,
+        isBanned: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        twoFactorEnabled: false,
-        loginAlertsEnabled: true,
+        bio: '',
       }), { expires: 7 });
 
     } catch (error) {

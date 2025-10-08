@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { handleApiError } from '@/api';
 
 const loginSchema = z.object({
-  usernameOrEmail: z.string().min(1, 'Username or email is required'),
+  emailOrUsername: z.string().min(1, 'Email or username is required'), // Changed field name
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
@@ -78,7 +78,7 @@ export default function LoginPage() {
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                transition={{ delay: 0.2, type: "spring" as const, stiffness: 200 }}
                 className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary"
               >
                 <Recycle className="h-6 w-6 text-primary-foreground" />
@@ -103,11 +103,11 @@ export default function LoginPage() {
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <Input
-                  {...register('usernameOrEmail')}
-                  label="Username or Email"
-                  placeholder="Enter your username or email"
+                  {...register('emailOrUsername')} // Changed field name
+                  label="Email or Username"
+                  placeholder="Enter your email or username"
                   leftIcon={<Mail className="h-4 w-4" />}
-                  error={errors.usernameOrEmail?.message}
+                  error={errors.emailOrUsername?.message}
                   disabled={isLoading}
                 />
 

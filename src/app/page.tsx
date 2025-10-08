@@ -17,7 +17,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -43,45 +44,7 @@ const itemVariants = {
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center space-x-2"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-                <Recycle className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold">Green Loop</span>
-            </motion.div>
-
-            <div className="hidden md:flex items-center space-x-8">
-              <Link href="#features" className="text-sm font-medium hover:text-primary transition-colors">
-                Features
-              </Link>
-              <Link href="#about" className="text-sm font-medium hover:text-primary transition-colors">
-                About
-              </Link>
-              <Link href="#contact" className="text-sm font-medium hover:text-primary transition-colors">
-                Contact
-              </Link>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <ThemeToggle />
-              <Button asChild variant="outline" size="sm">
-                <Link href="/auth/login">Login</Link>
-              </Button>
-              <Button asChild variant="gradient" size="sm">
-                <Link href="/auth/register">Get Started</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 sm:py-32">
@@ -147,7 +110,7 @@ export default function HomePage() {
               className="relative"
             >
               <div className="relative z-10 grid grid-cols-2 gap-4">
-                <Card hover className="col-span-2">
+                <Card className="col-span-2">
                   <CardContent className="p-6">
                     <div className="flex items-center space-x-4">
                       <div className="p-3 bg-primary/10 rounded-lg">
@@ -161,7 +124,7 @@ export default function HomePage() {
                   </CardContent>
                 </Card>
                 
-                <Card hover>
+                <Card>
                   <CardContent className="p-4">
                     <div className="text-center">
                       <Heart className="h-8 w-8 text-primary mx-auto mb-2" />
@@ -170,7 +133,7 @@ export default function HomePage() {
                   </CardContent>
                 </Card>
                 
-                <Card hover>
+                <Card>
                   <CardContent className="p-4">
                     <div className="text-center">
                       <TrendingUp className="h-8 w-8 text-primary mx-auto mb-2" />
@@ -262,7 +225,7 @@ export default function HomePage() {
               }
             ].map((feature, index) => (
               <motion.div key={index} variants={itemVariants}>
-                <Card hover className="h-full">
+                <Card className="h-full">
                   <CardHeader>
                     <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                       <feature.icon className="h-6 w-6 text-primary" />
@@ -320,55 +283,7 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t bg-muted/30">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-                  <Recycle className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <span className="text-xl font-bold">Green Loop</span>
-              </div>
-              <p className="text-muted-foreground">
-                Making fashion circular, one item at a time.
-              </p>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Platform</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/marketplace" className="hover:text-primary transition-colors">Marketplace</Link></li>
-                <li><Link href="/auth/register" className="hover:text-primary transition-colors">Join</Link></li>
-                <li><Link href="/how-it-works" className="hover:text-primary transition-colors">How it Works</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Company</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/about" className="hover:text-primary transition-colors">About</Link></li>
-                <li><Link href="/careers" className="hover:text-primary transition-colors">Careers</Link></li>
-                <li><Link href="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Support</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/help" className="hover:text-primary transition-colors">Help Center</Link></li>
-                <li><Link href="/privacy" className="hover:text-primary transition-colors">Privacy</Link></li>
-                <li><Link href="/terms" className="hover:text-primary transition-colors">Terms</Link></li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="border-t mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 Green Loop. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
