@@ -38,6 +38,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (storedToken && storedUser) {
       try {
         const userData = JSON.parse(storedUser);
+        
+        // Debug: Log what's being retrieved from cookies
+        console.log('=== RETRIEVING FROM COOKIES ===');
+        console.log('Stored user data:', userData);
+        console.log('Role from cookies:', userData.role);
+        console.log('UserType from cookies:', userData.userType);
+        console.log('Role type:', typeof userData.role);
+        console.log('UserType type:', typeof userData.userType);
+        console.log('===============================');
+        
         setToken(storedToken);
         setUser(userData);
       } catch (error) {
@@ -56,8 +66,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       const response: LoginResponse = await AuthAPI.login(credentials);
       
+      // Debug: Log the raw response from backend
+      console.log('=== BACKEND LOGIN RESPONSE ===');
+      console.log('Raw response:', response);
+      console.log('Role from backend:', response.role);
+      console.log('UserType from backend:', response.userType);
+      console.log('Role type:', typeof response.role);
+      console.log('UserType type:', typeof response.userType);
+      console.log('================================');
+      
       // Store token and user data
-      const { token: authToken, tokenType, ...userData } = response;
+      // Backend returns 'accessToken', not 'token'
+      const { accessToken: authToken, tokenType, ...userData } = response;
       const fullToken = `${tokenType} ${authToken}`.trim();
       
       setToken(fullToken);
@@ -83,8 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       // Store in cookies
-      Cookies.set('auth_token', authToken, { expires: 7 }); // 7 days
-      Cookies.set('user_data', JSON.stringify({
+      const userDataToStore = {
         userId: userData.userId,
         email: userData.email,
         firstName: userData.firstName,
@@ -103,7 +122,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         bio: '',
-      }), { expires: 7 });
+      };
+      
+      // Debug: Log what's being stored
+      console.log('=== STORING IN COOKIES ===');
+      console.log('User data being stored:', userDataToStore);
+      console.log('Role being stored:', userDataToStore.role);
+      console.log('UserType being stored:', userDataToStore.userType);
+      console.log('==========================');
+      
+      Cookies.set('auth_token', authToken, { expires: 7 }); // 7 days
+      Cookies.set('user_data', JSON.stringify(userDataToStore), { expires: 7 });
 
     } catch (error) {
       console.error('Login error:', error);
@@ -130,6 +159,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setToken(null);
     AuthAPI.logout();
+    // Redirect to login page after logout
+    window.location.href = '/auth/login';
   };
 
   const verifyEmail = async (verificationToken: string): Promise<string> => {

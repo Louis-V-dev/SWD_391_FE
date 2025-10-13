@@ -50,7 +50,8 @@ export const generateUploadSignature = (
 };
 
 // Upload preset for frontend uploads
-export const UPLOAD_PRESET = 'green_loop_items';
+// Use ml_default (Cloudinary's default unsigned preset) or create your own
+export const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
 
 // Cloudinary upload URL
-export const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`; 
+export const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dmpjc496u'}/image/upload`; 

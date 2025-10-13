@@ -1,7 +1,7 @@
 ﻿'use client';
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -10,12 +10,16 @@ import {
   Bell, 
   Menu, 
   X,
-  Search
+  Search,
+  LogOut,
+  Settings,
+  ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
+import { hasAdminAccess } from '@/lib/auth-utils';
 
 interface HeaderProps {
   showSearch?: boolean;
@@ -31,9 +35,25 @@ export default function Header({
   className = ""
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const pathname = usePathname();
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const navigation = [
     { name: 'Home', href: '/', current: pathname === '/' },
@@ -47,6 +67,18 @@ export default function Header({
     if (searchQuery.trim()) {
       window.location.href = `/marketplace?search=${encodeURIComponent(searchQuery)}`;
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    setUserMenuOpen(false);
+  };
+
+  const getUserInitials = () => {
+    if (!user) return '?';
+    const first = user.firstName?.charAt(0) || user.username?.charAt(0) || '?';
+    const last = user.lastName?.charAt(0) || '';
+    return (first + last).toUpperCase();
   };
 
   return (
@@ -125,13 +157,87 @@ export default function Header({
             {showUserMenu && (
               <div className="flex items-center space-x-2">
                 {user ? (
-                  <div className="flex items-center space-x-2">
-                    <Button asChild variant="outline" size="sm">
-                      <Link href="/profile">
-                        <User className="h-4 w-4 mr-2" />
-                        {user.firstName || 'User'}
-                      </Link>
+                  <div className="relative" ref={userMenuRef}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setUserMenuOpen(!userMenuOpen)}
+                      className="flex items-center space-x-2"
+                    >
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
+                        <span className="text-xs font-medium text-primary">
+                          {getUserInitials()}
+                        </span>
+                      </div>
+                      <span className="hidden sm:inline">{user.firstName || 'User'}</span>
+                      <ChevronDown className="h-4 w-4" />
                     </Button>
+
+                    {/* Dropdown Menu */}
+                    <AnimatePresence>
+                      {userMenuOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-card border border-border z-50"
+                        >
+                          <div className="py-1">
+                            {/* User Info */}
+                            <div className="px-4 py-3 border-b border-border">
+                              <p className="text-sm font-medium text-foreground">
+                                {user.firstName} {user.lastName}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {user.email}
+                              </p>
+                            </div>
+
+                            {/* Menu Items */}
+                            <Link
+                              href="/profile"
+                              className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
+                              onClick={() => setUserMenuOpen(false)}
+                            >
+                              <User className="mr-3 h-4 w-4" />
+                              Profile
+                            </Link>
+
+                            <Link
+                              href="/profile/settings"
+                              className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
+                              onClick={() => setUserMenuOpen(false)}
+                            >
+                              <Settings className="mr-3 h-4 w-4" />
+                              Settings
+                            </Link>
+
+                            {/* Admin Link - Only show for admin/staff */}
+                            {hasAdminAccess(user) && (
+                              <Link
+                                href="/admin"
+                                className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
+                                onClick={() => setUserMenuOpen(false)}
+                              >
+                                <Settings className="mr-3 h-4 w-4" />
+                                Admin Panel
+                              </Link>
+                            )}
+
+                            <div className="border-t border-border my-1"></div>
+
+                            {/* Logout */}
+                            <button
+                              onClick={handleLogout}
+                              className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                            >
+                              <LogOut className="mr-3 h-4 w-4" />
+                              Logout
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 ) : (
                   <div className="flex items-center space-x-2">
@@ -204,7 +310,26 @@ export default function Header({
               ))}
 
               {/* Mobile User Actions */}
-              {!user && (
+              {user ? (
+                <div className="px-3 py-2 space-y-2 border-t">
+                  <div className="px-2 py-2">
+                    <p className="text-sm font-medium text-foreground">
+                      {user.firstName} {user.lastName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    onClick={handleLogout}
+                    className="w-full justify-start"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </Button>
+                </div>
+              ) : (
                 <div className="px-3 py-2 space-y-2">
                   <Button asChild variant="outline" className="w-full">
                     <Link href="/auth/login">Sign In</Link>

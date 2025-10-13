@@ -5,17 +5,23 @@ import { LucideIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface StatsCardProps {
-  icon: LucideIcon;
-  label: string;
+  icon?: LucideIcon;
+  title?: string;
+  label?: string;
   value: string | number;
+  trend?: 'up' | 'down' | 'neutral';
+  trendValue?: number;
   index?: number;
   variant?: 'default' | 'transparent';
 }
 
 export default function StatsCard({ 
   icon: Icon, 
+  title,
   label, 
   value, 
+  trend,
+  trendValue,
   index = 0,
   variant = 'default'
 }: StatsCardProps) {
@@ -30,9 +36,11 @@ export default function StatsCard({
           : 'bg-card border'
       }`}
     >
-      <Icon className={`w-5 h-5 mx-auto mb-1 ${
-        variant === 'transparent' ? 'text-white' : 'text-primary'
-      }`} />
+      {Icon && (
+        <Icon className={`w-5 h-5 mx-auto mb-1 ${
+          variant === 'transparent' ? 'text-white' : 'text-primary'
+        }`} />
+      )}
       <div className={`text-2xl font-bold ${
         variant === 'transparent' ? 'text-white' : 'text-foreground'
       }`}>
@@ -41,7 +49,7 @@ export default function StatsCard({
       <div className={`text-xs ${
         variant === 'transparent' ? 'text-white/80' : 'text-muted-foreground'
       }`}>
-        {label}
+        {title || label}
       </div>
     </motion.div>
   );

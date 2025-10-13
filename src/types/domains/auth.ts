@@ -9,7 +9,10 @@ export enum UserType {
 
 export enum Role {
   USER = 'USER',
-  ADMIN = 'ADMIN', 
+  PREMIUM = 'PREMIUM',
+  COLLECTOR = 'COLLECTOR',
+  ADMIN = 'ADMIN',
+  SUPER_ADMIN = 'SUPER_ADMIN',
   STAFF = 'STAFF'
 }
 
@@ -58,7 +61,7 @@ export interface RegisterRequest {
 
 // Authentication Response Types
 export interface LoginResponse {
-  token: string;
+  accessToken: string; // Backend uses 'accessToken', not 'token'
   tokenType: string;
   userId: string; // Changed from number to string (UUID)
   firstName: string;
