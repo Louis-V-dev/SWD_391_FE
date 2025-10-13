@@ -41,7 +41,7 @@ export default function LoginPage() {
       setIsLoading(true);
       setError('');
       await login(data);
-      router.push('/dashboard');
+      router.push('/');
     } catch (err) {
       setError(handleApiError(err));
     } finally {

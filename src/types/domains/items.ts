@@ -49,6 +49,122 @@ export interface Brand {
   isPartner?: boolean;
 }
 
+// Brand Response Interface (detailed)
+export interface BrandResponse {
+  brandId: string;
+  name: string;
+  slug: string;
+  description?: string;
+  logoUrl?: string;
+  website?: string;
+  
+  // Sustainability metrics
+  sustainabilityRating?: number;
+  ecoCertification?: { [key: string]: any };
+  
+  // Status
+  isVerified?: boolean;
+  isPartner?: boolean;
+  isActive?: boolean;
+  
+  // Timestamps
+  createdAt: string;
+  updatedAt: string;
+  
+  // Computed fields
+  isSustainable?: boolean;
+  hasEcoCertification?: boolean;
+  
+  // Statistics
+  totalItems?: number;
+}
+
+// Category Response Interface (detailed)
+export interface CategoryResponse {
+  categoryId: string;
+  name: string;
+  slug: string;
+  description?: string;
+  imageUrl?: string;
+  icon?: string;
+  
+  // Parent category info
+  parentCategoryId?: string;
+  parentCategoryName?: string;
+  
+  // Subcategories
+  subCategories?: CategoryResponse[];
+  
+  // Settings
+  requiresAuthentication?: boolean;
+  minConditionScore?: number;
+  displayOrder?: number;
+  isActive?: boolean;
+  
+  // Timestamps
+  createdAt: string;
+  updatedAt: string;
+  
+  // Computed fields
+  isRootCategory?: boolean;
+  hasSubCategories?: boolean;
+  fullPath?: string;
+  level?: number;
+  
+  // Statistics
+  totalItems?: number;
+}
+
+// Request Types for Brand
+export interface BrandCreateRequest {
+  name: string;
+  description?: string;
+  logoUrl?: string;
+  website?: string;
+  sustainabilityRating?: number;
+  ecoCertification?: { [key: string]: any };
+  isVerified?: boolean;
+  isPartner?: boolean;
+  isActive?: boolean;
+}
+
+export interface BrandUpdateRequest {
+  name?: string;
+  description?: string;
+  logoUrl?: string;
+  website?: string;
+  sustainabilityRating?: number;
+  ecoCertification?: { [key: string]: any };
+  isVerified?: boolean;
+  isPartner?: boolean;
+  isActive?: boolean;
+}
+
+// Request Types for Category
+export interface CategoryCreateRequest {
+  name: string;
+  description?: string;
+  parentCategoryId?: string;
+  imageUrl?: string;
+  icon?: string;
+  requiresAuthentication?: boolean;
+  minConditionScore?: number;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+export interface CategoryUpdateRequest {
+  name?: string;
+  description?: string;
+  parentCategoryId?: string;
+  imageUrl?: string;
+  icon?: string;
+  requiresAuthentication?: boolean;
+  minConditionScore?: number;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
 // Item Response Interface (full details)
 export interface ItemResponse {
   itemId: string;
