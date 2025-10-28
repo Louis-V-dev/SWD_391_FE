@@ -194,6 +194,7 @@ export interface ItemResponse {
   conditionDescription?: string;
   originalPrice?: number;
   currentEstimatedValue?: number;
+  resellPrice?: number;
   
   // Ownership
   originalOwnerId?: string;
@@ -253,6 +254,7 @@ export interface ItemSummaryResponse {
   conditionScore?: number;
   conditionText?: string;
   currentEstimatedValue?: number;
+  resellPrice?: number;
   
   itemStatus: ItemStatus;
   isVerified?: boolean;
@@ -278,6 +280,7 @@ export interface CreateItemRequest {
   conditionDescription?: string;
   originalPrice?: number;
   currentEstimatedValue?: number;
+  resellPrice?: number;
   materialComposition?: { [key: string]: number };
   weightGrams?: number;
   dimensions?: { [key: string]: number };
@@ -302,6 +305,7 @@ export interface UpdateItemRequest {
   conditionDescription?: string;
   originalPrice?: number;
   currentEstimatedValue?: number;
+  resellPrice?: number;
   materialComposition?: { [key: string]: number };
   weightGrams?: number;
   dimensions?: { [key: string]: number };

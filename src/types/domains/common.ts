@@ -6,11 +6,26 @@ export interface ApiResponse<T> {
 }
 
 export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
+  content: T[];  // Backend uses 'content' not 'data'
+  totalElements: number;
   totalPages: number;
+  size: number;
+  number: number;  // Current page number
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+  pageable?: {
+    pageNumber: number;
+    pageSize: number;
+    offset: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
+  // Legacy fields for backward compatibility
+  data?: T[];
+  total?: number;
+  page?: number;
+  limit?: number;
 }
 
 // UI Types

@@ -69,7 +69,8 @@ export default function ItemsManagementPage() {
         });
       }
 
-      setItems(response.data || []);
+      // API returns paginated response with 'content' field
+      setItems(response.content || []);
       setTotalPages(response.totalPages || 0);
     } catch (error) {
       console.error('Failed to fetch items:', error);
@@ -348,10 +349,19 @@ export default function ItemsManagementPage() {
                       <div className="flex items-center space-x-6">
                         {/* Price */}
                         <div className="text-right">
-                          <p className="text-lg font-bold text-foreground">
+                          <p className="text-sm text-muted-foreground">Est. Value</p>
+                          <p className="text-lg font-bold text-blue-600">
                             ${item.currentEstimatedValue?.toFixed(2) || '0.00'}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          {item.resellPrice && (
+                            <>
+                              <p className="text-sm text-muted-foreground mt-1">Resell Price</p>
+                              <p className="text-lg font-bold text-green-600">
+                                ${item.resellPrice.toFixed(2)}
+                              </p>
+                            </>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">
                             {new Date(item.createdAt).toLocaleDateString()}
                           </p>
                         </div>
@@ -364,12 +374,12 @@ export default function ItemsManagementPage() {
                         {/* Actions */}
                         <div className="flex items-center space-x-2">
                           <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/item/${item.itemId}`}>
+                            <Link href={`/admin/items/${item.itemId}`}>
                               <Eye className="w-4 h-4" />
                             </Link>
                           </Button>
                           <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/item/${item.itemId}/edit`}>
+                            <Link href={`/admin/items/${item.itemId}/edit`}>
                               <Edit className="w-4 h-4" />
                             </Link>
                           </Button>

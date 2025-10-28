@@ -144,3 +144,13 @@ const isAdmin = hasAdminAccess(user);
 - Backend ERD: `group2/green-loop-be/CONCEPTUAL_ERD.md`
 - User Management: `group2/green-loop-be/USER_AND_POINT_MANAGEMENT_README.md`
 
+
+
+
+
+
+
+
+
+
+

@@ -60,6 +60,42 @@ export class ItemsAPI {
   }
 
   /**
+   * Create new item with images (transactional - rollback if image upload fails)
+   */
+  static async createItemWithImages(
+    itemData: CreateItemRequest, 
+    userId: string, 
+    images: File[]
+  ): Promise<ItemResponse> {
+    try {
+      const formData = new FormData();
+      
+      // Add item data as JSON blob
+      formData.append('item', new Blob([JSON.stringify(itemData)], { type: 'application/json' }));
+      
+      // Add images
+      images.forEach((image) => {
+        formData.append('images', image);
+      });
+      
+      const response = await apiClient.post<ItemResponse>(
+        `/api/items/with-images?userId=${userId}`, 
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 120000 // 2 minutes for image uploads
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
    * Update item
    */
   static async updateItem(id: string, itemData: UpdateItemRequest): Promise<ItemResponse> {

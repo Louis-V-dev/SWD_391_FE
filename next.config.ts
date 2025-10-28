@@ -7,9 +7,33 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  experimental: {
-    optimizePackageImports: ['lucide-react'],
+  
+  // ✨ Image Optimization - Massive performance boost!
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.cloudinary.com',
+      },
+    ],
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
   },
+
+  // ✨ Performance Optimizations
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
+  },
+  
+  // ✨ Production Optimizations
+  productionBrowserSourceMaps: false,
+  compress: true,
+  
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
@@ -19,6 +43,7 @@ const nextConfig: NextConfig = {
         os: false,
       };
     }
+    
     return config;
   },
 };

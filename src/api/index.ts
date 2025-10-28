@@ -1,7 +1,7 @@
 // Export all API services
 export { AuthAPI } from './auth';
 export { ItemsAPI, CategoriesAPI, BrandsAPI } from './items';
-export { MarketplaceAPI } from './marketplace';
+// MarketplaceAPI removed - marketplace listing feature removed
 
 // Export individual user functions (users.ts exports functions, not a class)
 export * from './users';
