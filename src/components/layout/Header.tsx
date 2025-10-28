@@ -82,7 +82,7 @@ export default function Header({
   };
 
   return (
-    <nav className={`sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm ${className}`}>
+    <nav className={`sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm${className ? ' ' + className : ''}`}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
@@ -122,6 +122,8 @@ export default function Header({
               <form onSubmit={handleSearch} className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
+                  id="header-search"
+                  name="search"
                   type="text"
                   placeholder="Search items..."
                   value={searchQuery}
@@ -283,6 +285,8 @@ export default function Header({
                   <form onSubmit={handleSearch} className="relative">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
+                      id="header-search-mobile"
+                      name="search"
                       type="text"
                       placeholder="Search items..."
                       value={searchQuery}

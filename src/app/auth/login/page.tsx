@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
 import { handleApiError } from '@/api';
+import GoogleLoginButton from '@/components/auth/GoogleLoginButton';
 
 const loginSchema = z.object({
   emailOrUsername: z.string().min(1, 'Email or username is required'), // Changed field name
@@ -174,7 +175,10 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Google Login Button */}
+              <GoogleLoginButton />
+
+              <div className="grid grid-cols-2 gap-4 opacity-50">
                 <Button variant="outline" size="lg" disabled>
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                     <path
