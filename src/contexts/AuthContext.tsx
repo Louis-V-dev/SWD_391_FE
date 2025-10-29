@@ -39,20 +39,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const userData = JSON.parse(storedUser);
         
-        // Debug: Log what's being retrieved from cookies
         console.log('=== RETRIEVING FROM COOKIES ===');
         console.log('Stored user data:', userData);
         console.log('Role from cookies:', userData.role);
-        console.log('UserType from cookies:', userData.userType);
-        console.log('Role type:', typeof userData.role);
-        console.log('UserType type:', typeof userData.userType);
         console.log('===============================');
         
         setToken(storedToken);
         setUser(userData);
       } catch (error) {
         console.error('Error parsing stored user data:', error);
-        // Clear invalid data
         Cookies.remove('auth_token');
         Cookies.remove('user_data');
       }
@@ -62,54 +57,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (credentials: LoginRequest): Promise<void> => {
+    console.log('🔐 AuthContext: Login attempt started');
+    
     try {
-      setIsLoading(true);
+      // DON'T set isLoading here - let the component handle it
       const response: LoginResponse = await AuthAPI.login(credentials);
       
-      // Debug: Log the raw response from backend
+      console.log('✅ AuthContext: API call successful');
       console.log('=== BACKEND LOGIN RESPONSE ===');
       console.log('Raw response:', response);
       console.log('Role from backend:', response.role);
-      console.log('UserType from backend:', response.userType);
-      console.log('Role type:', typeof response.role);
-      console.log('UserType type:', typeof response.userType);
       console.log('================================');
       
-      // Store token and user data
       // Backend returns 'accessToken', not 'token'
       const { accessToken: authToken, tokenType, ...userData } = response;
       const fullToken = `${tokenType} ${authToken}`.trim();
       
-      setToken(fullToken);
-      setUser({
-        userId: userData.userId,
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        username: userData.username,
-        userType: userData.userType,
-        role: userData.role,
-        sustainabilityScore: userData.sustainabilityScore,
-        sustainabilityPoints: userData.sustainabilityPoints,
-        trustScore: 5.0, // Default trust score
-        emailVerified: userData.emailVerified,
-        phoneVerified: userData.phoneVerified,
-        isVerified: userData.emailVerified,
-        isActive: true,
-        isBanned: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        bio: '',
-      });
-
-      // Store in cookies
       const userDataToStore = {
         userId: userData.userId,
         email: userData.email,
         firstName: userData.firstName,
         lastName: userData.lastName,
         username: userData.username,
-        userType: userData.userType,
         role: userData.role,
         sustainabilityScore: userData.sustainabilityScore,
         sustainabilityPoints: userData.sustainabilityPoints,
@@ -124,43 +93,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         bio: '',
       };
       
-      // Debug: Log what's being stored
       console.log('=== STORING IN COOKIES ===');
       console.log('User data being stored:', userDataToStore);
       console.log('Role being stored:', userDataToStore.role);
-      console.log('UserType being stored:', userDataToStore.userType);
       console.log('==========================');
       
-      Cookies.set('auth_token', authToken, { expires: 7 }); // 7 days
+      // Store in cookies
+      Cookies.set('auth_token', authToken, { expires: 7 });
       Cookies.set('user_data', JSON.stringify(userDataToStore), { expires: 7 });
-
+      
+      // Update state
+      setToken(fullToken);
+      setUser(userDataToStore);
+      
+      console.log('✅ AuthContext: Login completed successfully');
     } catch (error) {
-      console.error('Login error:', error);
-      throw new Error(handleApiError(error));
-    } finally {
-      setIsLoading(false);
+      console.error('❌ AuthContext: Login failed, re-throwing error');
+      // Re-throw the error WITHOUT wrapping it
+      throw error;
     }
   };
 
   const register = async (userData: RegisterRequest): Promise<void> => {
     try {
-      setIsLoading(true);
       await AuthAPI.register(userData);
-      // Note: After registration, user needs to verify email before logging in
     } catch (error) {
-      console.error('Registration error:', error);
-      throw new Error(handleApiError(error));
-    } finally {
-      setIsLoading(false);
+      console.error('❌ AuthContext: Registration failed, re-throwing error');
+      // Re-throw the error WITHOUT wrapping it
+      throw error;
     }
   };
 
   const logout = (): void => {
+    console.log('🚪 AuthContext: Logging out');
+    
     setUser(null);
     setToken(null);
+    
+    Cookies.remove('auth_token');
+    Cookies.remove('user_data');
+    
     AuthAPI.logout();
-    // Redirect to login page after logout
-    window.location.href = '/auth/login';
+    
+    // Redirect to login page
+    if (typeof window !== 'undefined') {
+      window.location.href = '/auth/login';
+    }
   };
 
   const verifyEmail = async (verificationToken: string): Promise<string> => {
@@ -170,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return result;
     } catch (error) {
       console.error('Email verification error:', error);
-      throw new Error(handleApiError(error));
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -181,7 +159,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
       
-      // Update stored user data
       Cookies.set('user_data', JSON.stringify(updatedUser), { expires: 7 });
     }
   };
@@ -211,4 +188,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-} 
+}

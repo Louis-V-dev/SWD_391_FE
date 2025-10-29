@@ -74,12 +74,7 @@ export const searchUsers = async (keyword: string, page: number = 0, size: numbe
   return pageData?.content || [];
 };
 
-export const getUsersByType = async (userType: string, page: number = 0, size: number = 10) => {
-  const response = await axiosInstance.get(`/api/users/type/${userType}`, {
-    params: { page, size }
-  });
-  return response.data.data;
-};
+// Removed getUsersByType - userType field has been removed, use getUsersByRole instead
 
 export const getUsersByRole = async (role: string, page: number = 0, size: number = 10) => {
   const response = await axiosInstance.get(`/api/users/role/${role}`, {

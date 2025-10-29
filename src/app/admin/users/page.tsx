@@ -88,7 +88,7 @@ export default function UsersManagementPage() {
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.fullName?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesRole = selectedRole === 'all' || user.userType.toLowerCase() === selectedRole.toLowerCase();
+    const matchesRole = selectedRole === 'all' || user.role.toLowerCase() === selectedRole.toLowerCase();
     const matchesStatus = selectedStatus === 'all' || 
       (selectedStatus === 'active' && user.isActive) ||
       (selectedStatus === 'banned' && user.isBanned) ||
@@ -147,19 +147,19 @@ export default function UsersManagementPage() {
           />
         </motion.div>
 
-        {/* User Types Distribution */}
-        {summary?.usersByType && Object.keys(summary.usersByType).length > 0 && (
+        {/* Users by Role Distribution */}
+        {summary?.usersByRole && Object.keys(summary.usersByRole).length > 0 && (
           <motion.div variants={itemVariants}>
             <Card>
               <CardHeader>
-                <CardTitle>Users by Type</CardTitle>
+                <CardTitle>Users by Role</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  {Object.entries(summary.usersByType).map(([type, count]) => (
-                    <div key={type} className="text-center p-4 bg-muted rounded-lg">
-                      <p className="text-2xl font-bold text-foreground">{count}</p>
-                      <p className="text-sm text-muted-foreground mt-1">{type}</p>
+                  {Object.entries(summary.usersByRole).map(([role, count]) => (
+                    <div key={role} className="text-center p-4 bg-muted rounded-lg">
+                      <p className="text-2xl font-bold text-foreground">{count as number}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{role}</p>
                     </div>
                   ))}
                 </div>
@@ -229,7 +229,7 @@ export default function UsersManagementPage() {
                     <thead>
                       <tr className="border-b">
                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">User</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Type</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Role</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Points</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Stats</th>
@@ -258,7 +258,7 @@ export default function UsersManagementPage() {
                             </div>
                           </td>
                           <td className="py-4 px-4">
-                            <Badge variant="outline">{user.userType}</Badge>
+                            <Badge variant="outline">{user.role}</Badge>
                           </td>
                           <td className="py-4 px-4">
                             <div className="flex flex-col gap-1">

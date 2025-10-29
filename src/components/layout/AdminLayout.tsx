@@ -68,13 +68,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       return;
     }
     
-    // Debug: Log user role and type
+    // Debug: Log user role
     console.log('User role:', user.role);
-    console.log('User type:', user.userType);
     console.log('User role type:', typeof user.role);
-    console.log('User type type:', typeof user.userType);
     
-    // Check if user has admin access through EITHER role OR userType
+    // Check if user has admin access through role
     const adminAccess = hasAdminAccess(user);
     
     console.log('Has admin access:', adminAccess);

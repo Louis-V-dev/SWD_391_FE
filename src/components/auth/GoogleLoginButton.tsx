@@ -42,7 +42,6 @@ export default function GoogleLoginButton() {
           firstName: userData.firstName,
           lastName: userData.lastName,
           role: userData.role,
-          userType: userData.userType,
         };
         
         // Set cookies with correct names (matching AuthContext)
@@ -57,13 +56,13 @@ export default function GoogleLoginButton() {
         }, 100);
         return;
       } else {
+        setLoading(false);
         setError(data.message || 'Google login failed');
       }
     } catch (error) {
       console.error('Google login error:', error);
-      setError('An error occurred during Google login. Please try again.');
-    } finally {
       setLoading(false);
+      setError('An error occurred during Google login. Please try again.');
     }
   };
 
@@ -89,11 +88,11 @@ export default function GoogleLoginButton() {
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
-            useOneTap
             theme="outline"
             size="large"
             text="continue_with"
             shape="rectangular"
+            width="300"
           />
         </div>
       )}

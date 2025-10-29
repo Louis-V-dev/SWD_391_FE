@@ -8,7 +8,6 @@ export interface User {
   phone?: string;
   dateOfBirth?: string;
   gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
-  userType: 'CONSUMER' | 'COLLECTOR' | 'BRAND' | 'ADMIN' | 'MODERATOR';
   role: 'USER' | 'ADMIN' | 'STAFF';
   avatarUrl?: string;
   bio?: string;
@@ -67,7 +66,6 @@ export interface UserManagementSummary {
   activeUsers: number;
   bannedUsers: number;
   verifiedUsers: number;
-  usersByType: Record<string, number>;
   usersByRole: Record<string, number>;
 }
 

@@ -1,12 +1,4 @@
 // User Types - Updated to match backend
-export enum UserType {
-  CONSUMER = 'CONSUMER',
-  COLLECTOR = 'COLLECTOR', 
-  BRAND = 'BRAND',
-  ADMIN = 'ADMIN',
-  MODERATOR = 'MODERATOR'
-}
-
 export enum Role {
   USER = 'USER',
   PREMIUM = 'PREMIUM',
@@ -24,8 +16,7 @@ export interface User {
   phone?: string;
   dateOfBirth?: string;
   gender?: string;
-  userType: UserType;
-  role: Role; // Added role field
+  role: Role;
   sustainabilityScore: number;
   sustainabilityPoints: number; // Added points field
   trustScore: number; // Added trust score
@@ -56,7 +47,6 @@ export interface RegisterRequest {
   dateOfBirth?: string;
   gender?: string;
   username?: string;
-  userType?: UserType; // Added user type
 }
 
 // Authentication Response Types
@@ -68,8 +58,7 @@ export interface LoginResponse {
   lastName: string;
   email: string;
   username?: string;
-  userType: UserType;
-  role: Role; // Added role field
+  role: Role;
   sustainabilityScore: number;
   sustainabilityPoints: number; // Added points field
   emailVerified: boolean;
@@ -82,8 +71,7 @@ export interface UserResponse {
   lastName: string;
   email: string;
   username?: string;
-  userType: UserType;
-  role: Role; // Added role field
+  role: Role;
   sustainabilityScore: number;
   sustainabilityPoints: number; // Added points field
   emailVerified: boolean;

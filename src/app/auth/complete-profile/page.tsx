@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { User, Phone, Calendar, UserCircle, Briefcase, ArrowRight, Loader2 } from 'lucide-react';
+import { Phone, Calendar, UserCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -28,7 +28,6 @@ const completeProfileSchema = z.object({
     .regex(/^[+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/, 'Invalid phone number format'),
   dateOfBirth: z.string().optional(),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
-  userType: z.enum(['CONSUMER', 'SELLER']).refine((val) => val, { message: 'Please select your account type' }),
   bio: z.string().max(500, 'Bio must not exceed 500 characters').optional(),
 });
 
@@ -86,7 +85,6 @@ function CompleteProfileContent() {
           firstName: userData.firstName,
           lastName: userData.lastName,
           role: userData.role,
-          userType: userData.userType,
         };
         
         // Set cookies with correct names (matching AuthContext)
@@ -222,55 +220,6 @@ function CompleteProfileContent() {
                 </select>
                 {errors.gender && (
                   <p className="mt-1 text-xs text-red-600">{errors.gender.message}</p>
-                )}
-              </div>
-
-              {/* User Type */}
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Account Type <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-2 gap-4">
-                  <label className="relative flex cursor-pointer">
-                    <input
-                      {...register('userType')}
-                      type="radio"
-                      value="CONSUMER"
-                      className="peer sr-only"
-                      disabled={isLoading}
-                    />
-                    <div className="w-full rounded-lg border-2 border-border p-4 peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center space-x-3">
-                        <User className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="font-medium">Consumer</p>
-                          <p className="text-xs text-muted-foreground">Buy sustainable fashion</p>
-                        </div>
-                      </div>
-                    </div>
-                  </label>
-
-                  <label className="relative flex cursor-pointer">
-                    <input
-                      {...register('userType')}
-                      type="radio"
-                      value="SELLER"
-                      className="peer sr-only"
-                      disabled={isLoading}
-                    />
-                    <div className="w-full rounded-lg border-2 border-border p-4 peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center space-x-3">
-                        <Briefcase className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="font-medium">Seller</p>
-                          <p className="text-xs text-muted-foreground">Sell pre-loved items</p>
-                        </div>
-                      </div>
-                    </div>
-                  </label>
-                </div>
-                {errors.userType && (
-                  <p className="mt-1 text-xs text-red-600">{errors.userType.message}</p>
                 )}
               </div>
 

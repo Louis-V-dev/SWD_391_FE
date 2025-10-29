@@ -37,15 +37,22 @@ export class AuthAPI {
       if (response.data.success) {
         return response.data.data;
       } else {
-        throw new Error(response.data.message || 'Login failed');
+        // If success is false but no error was thrown, create one
+        const err: any = new Error(response.data.message || 'Login failed');
+        err.response = { data: response.data };
+        throw err;
       }
     } catch (error: any) {
-      // Handle structured error responses
+      // Handle structured error responses - throw directly, don't wrap
       if (error.response?.data) {
         const errorData = error.response.data as ApiError;
-        throw new Error(errorData.message || 'Login failed');
+        // Create error with original structure preserved
+        const err: any = new Error(errorData.message || 'Login failed');
+        err.response = error.response;
+        throw err;
       }
-      throw new Error(handleApiError(error));
+      // Re-throw without wrapping
+      throw error;
     }
   }
 
@@ -59,15 +66,22 @@ export class AuthAPI {
       if (response.data.success) {
         return response.data.data;
       } else {
-        throw new Error(response.data.message || 'Registration failed');
+        // If success is false but no error was thrown, create one
+        const err: any = new Error(response.data.message || 'Registration failed');
+        err.response = { data: response.data };
+        throw err;
       }
     } catch (error: any) {
-      // Handle structured error responses
+      // Handle structured error responses - throw directly, don't wrap
       if (error.response?.data) {
         const errorData = error.response.data as ApiError;
-        throw new Error(errorData.message || 'Registration failed');
+        // Create error with original structure preserved
+        const err: any = new Error(errorData.message || 'Registration failed');
+        err.response = error.response;
+        throw err;
       }
-      throw new Error(handleApiError(error));
+      // Re-throw without wrapping
+      throw error;
     }
   }
 
@@ -87,6 +101,29 @@ export class AuthAPI {
       if (error.response?.data) {
         const errorData = error.response.data as ApiError;
         throw new Error(errorData.message || 'Email verification failed');
+      }
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Resend verification email
+   */
+  static async resendVerificationEmail(email: string): Promise<string> {
+    try {
+      const response = await apiClient.post<ApiResponse<string>>('/api/auth/resend-verification', null, {
+        params: { email }
+      });
+      
+      if (response.data.success) {
+        return response.data.data || response.data.message;
+      } else {
+        throw new Error(response.data.message || 'Failed to resend verification email');
+      }
+    } catch (error: any) {
+      if (error.response?.data) {
+        const errorData = error.response.data as ApiError;
+        throw new Error(errorData.message || 'Failed to resend verification email');
       }
       throw new Error(handleApiError(error));
     }
