@@ -38,7 +38,7 @@ export const useAuth = (): UseAuthReturn => {
         email: response.email,
         firstName: response.firstName,
         lastName: response.lastName,
-        userType: response.userType,
+        role: response.role,
         sustainabilityScore: response.sustainabilityScore,
         emailVerified: response.emailVerified
       }), { expires: 1 });

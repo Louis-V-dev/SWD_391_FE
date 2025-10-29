@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,14 +26,27 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '1093884420538-ka17a3efctfkv117f1lqotu4uusgokn9.apps.googleusercontent.com';
+  
+  // Debug: Log client ID (remove after testing)
+  if (typeof window === 'undefined') {
+    console.log('🔑 Google Client ID:', googleClientId ? '✅ Loaded' : '❌ Missing');
+  }
+  
+  if (!googleClientId) {
+    console.error('❌ NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set!');
+  }
+  
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ThemeProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </ThemeProvider>
+        <GoogleOAuthProvider clientId={googleClientId}>
+          <ThemeProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </ThemeProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );

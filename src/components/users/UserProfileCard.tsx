@@ -30,7 +30,6 @@ export function UserProfileCard({ user, showStats = true }: UserProfileCardProps
           </div>
           <p className="text-gray-600 mt-1">@{user.username}</p>
           <div className="flex items-center gap-2 mt-2">
-            <Badge>{user.userType.replace('_', ' ')}</Badge>
             <Badge variant="outline">{user.role}</Badge>
           </div>
         </div>

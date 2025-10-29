@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -12,10 +12,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
-import { handleApiError } from '@/api';
+import { handleApiError, AuthAPI } from '@/api';
+import GoogleLoginButton from '@/components/auth/GoogleLoginButton';
 
 const loginSchema = z.object({
-  emailOrUsername: z.string().min(1, 'Email or username is required'), // Changed field name
+  emailOrUsername: z.string().min(1, 'Email or username is required'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
@@ -25,6 +26,12 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showResendModal, setShowResendModal] = useState(false);
+  const [resendEmail, setResendEmail] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState('');
+  const [lastResendTime, setLastResendTime] = useState<number>(0);
+  const [resendCooldown, setResendCooldown] = useState<number>(0);
   const { login } = useAuth();
   const router = useRouter();
 
@@ -36,17 +43,153 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginFormData) => {
+  // Debug: Track component lifecycle
+  useEffect(() => {
+    console.log('🎬 LoginPage: Component mounted');
+    
+    // Prevent any unhandled errors from causing page reload
+    const handleError = (event: ErrorEvent) => {
+      console.error('🚨 LoginPage: Unhandled error caught:', event.error);
+      event.preventDefault();
+      return false;
+    };
+    
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      console.error('🚨 LoginPage: Unhandled promise rejection:', event.reason);
+      event.preventDefault();
+      return false;
+    };
+    
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
+    
+    return () => {
+      console.log('💀 LoginPage: Component unmounted');
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
+    };
+  }, []);
+
+  // Cooldown timer for resend button
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setInterval(() => {
+        setResendCooldown(prev => Math.max(0, prev - 1));
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [resendCooldown]);
+
+  const onSubmit = async (data: LoginFormData, event?: React.BaseSyntheticEvent) => {
+    // CRITICAL: Prevent default form submission
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    // Prevent duplicate submissions
+    if (isLoading) {
+      console.log('⚠️ LoginPage: Already submitting, ignoring');
+      return;
+    }
+
+    console.log('📝 LoginPage: Form submitted');
+    
+    // Reset all states at the start
+    setIsLoading(true);
+    setError('');
+    setShowResendModal(false);
+    setResendSuccess('');
+    
     try {
-      setIsLoading(true);
-      setError('');
+      console.log('🔄 LoginPage: Calling login function...');
       await login(data);
+      
+      console.log('✅ LoginPage: Login successful, navigating...');
+      // Use router.push without window.location to prevent reload
       router.push('/');
-    } catch (err) {
-      setError(handleApiError(err));
+      
+    } catch (err: any) {
+      console.error('❌ LoginPage: Login failed:', err);
+      
+      // Extract error message safely
+      let errorMessage = 'Login failed. Please try again.';
+      
+      try {
+        errorMessage = handleApiError(err);
+      } catch (handleError) {
+        console.error('❌ LoginPage: Error handling error:', handleError);
+      }
+      
+      setError(errorMessage);
+      
+      // Check if error is about unverified email
+      if (errorMessage.toLowerCase().includes('verify your email') || 
+          errorMessage.toLowerCase().includes('email verification') ||
+          errorMessage.toLowerCase().includes('not verified')) {
+        // Backend can handle both email and username
+        setResendEmail(data.emailOrUsername);
+        setShowResendModal(true);
+      }
+      
+      // Important: Don't let the error propagate further
+      console.log('🛑 LoginPage: Error handled, NOT propagating');
+      
     } finally {
+      console.log('🏁 LoginPage: Request complete, stopping loading');
       setIsLoading(false);
     }
+  };
+
+  const handleResendVerification = async () => {
+    // Check cooldown
+    const now = Date.now();
+    const timeSinceLastResend = (now - lastResendTime) / 1000; // in seconds
+    
+    if (timeSinceLastResend < 60) {
+      const remaining = Math.ceil(60 - timeSinceLastResend);
+      setError(`Please wait ${remaining} seconds before resending.`);
+      return;
+    }
+    
+    // Validate input
+    if (!resendEmail) {
+      setError('Email or username is required.');
+      return;
+    }
+    
+    try {
+      setResendLoading(true);
+      setResendSuccess('');
+      setError('');
+      
+      await AuthAPI.resendVerificationEmail(resendEmail);
+      
+      // Set cooldown
+      setLastResendTime(now);
+      setResendCooldown(60);
+      
+      setResendSuccess('Verification email sent! Please check your inbox.');
+    } catch (err) {
+      console.error('❌ LoginPage: Resend verification failed:', err);
+      
+      let errorMessage = 'Failed to resend verification email.';
+      try {
+        errorMessage = handleApiError(err);
+      } catch (handleError) {
+        console.error('❌ LoginPage: Error handling error:', handleError);
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
+  const closeModal = () => {
+    setShowResendModal(false);
+    setResendSuccess('');
+    setError('');
   };
 
   return (
@@ -78,7 +221,7 @@ export default function LoginPage() {
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring" as const, stiffness: 200 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
                 className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary"
               >
                 <Recycle className="h-6 w-6 text-primary-foreground" />
@@ -91,7 +234,7 @@ export default function LoginPage() {
             </CardHeader>
 
             <CardContent className="space-y-6">
-              {error && (
+              {error && !showResendModal && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -101,14 +244,23 @@ export default function LoginPage() {
                 </motion.div>
               )}
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSubmit(onSubmit)(e);
+                }} 
+                className="space-y-4" 
+                noValidate
+              >
                 <Input
-                  {...register('emailOrUsername')} // Changed field name
+                  {...register('emailOrUsername')}
                   label="Email or Username"
                   placeholder="Enter your email or username"
                   leftIcon={<Mail className="h-4 w-4" />}
                   error={errors.emailOrUsername?.message}
                   disabled={isLoading}
+                  autoComplete="username"
                 />
 
                 <div className="space-y-2">
@@ -123,6 +275,7 @@ export default function LoginPage() {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="hover:text-primary transition-colors"
+                        tabIndex={-1}
                       >
                         {showPassword ? (
                           <EyeOff className="h-4 w-4" />
@@ -133,20 +286,25 @@ export default function LoginPage() {
                     }
                     error={errors.password?.message}
                     disabled={isLoading}
+                    autoComplete="current-password"
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <label className="flex items-center space-x-2 text-sm">
+                  <label className="flex items-center space-x-2 text-sm cursor-pointer">
                     <input
+                      id="remember-me"
+                      name="rememberMe"
                       type="checkbox"
                       className="rounded border-border text-primary focus:ring-primary"
+                      disabled={isLoading}
                     />
                     <span>Remember me</span>
                   </label>
                   <Link
                     href="/auth/forgot-password"
                     className="text-sm text-primary hover:underline"
+                    tabIndex={isLoading ? -1 : 0}
                   >
                     Forgot password?
                   </Link>
@@ -158,8 +316,9 @@ export default function LoginPage() {
                   variant="gradient"
                   size="lg"
                   loading={isLoading}
+                  disabled={isLoading}
                 >
-                  Sign In
+                  {isLoading ? 'Signing In...' : 'Sign In'}
                 </Button>
               </form>
 
@@ -174,35 +333,8 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Button variant="outline" size="lg" disabled>
-                  <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                    <path
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                      fill="#4285F4"
-                    />
-                    <path
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                      fill="#34A853"
-                    />
-                    <path
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                      fill="#FBBC05"
-                    />
-                    <path
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                      fill="#EA4335"
-                    />
-                  </svg>
-                  Google
-                </Button>
-                <Button variant="outline" size="lg" disabled>
-                  <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                  Facebook
-                </Button>
-              </div>
+              {/* Google Login Button */}
+              <GoogleLoginButton />
 
               <div className="text-center text-sm">
                 <span className="text-muted-foreground">Don't have an account? </span>
@@ -235,6 +367,105 @@ export default function LoginPage() {
             </Link>
           </p>
         </motion.div>
+
+        {/* Email Verification Modal */}
+        {showResendModal && (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                closeModal();
+              }
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Card className="border-0 shadow-2xl">
+                <CardHeader>
+                  <CardTitle className="text-center">Email Verification Required</CardTitle>
+                  <CardDescription className="text-center">
+                    Your email address hasn't been verified yet. We've sent a verification link to your email.
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent className="space-y-4">
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
+                    >
+                      {error}
+                    </motion.div>
+                  )}
+
+                  {resendSuccess ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="rounded-md bg-green-50 p-3 text-sm text-green-800 border border-green-200"
+                    >
+                      {resendSuccess}
+                    </motion.div>
+                  ) : (
+                    <>
+                      <div className="rounded-md bg-yellow-50 p-3 border border-yellow-200">
+                        <p className="text-sm text-yellow-800">
+                          Didn't receive the email? Click below to resend the verification link.
+                        </p>
+                        <p className="text-sm font-medium text-yellow-900 mt-2">
+                          Verification email will be sent to the email address associated with: <span className="break-all">{resendEmail}</span>
+                        </p>
+                      </div>
+                      
+                      <Button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleResendVerification();
+                        }}
+                        loading={resendLoading}
+                        disabled={resendLoading || resendCooldown > 0}
+                        className="w-full"
+                        variant="gradient"
+                      >
+                        {resendLoading 
+                          ? 'Sending...' 
+                          : resendCooldown > 0 
+                            ? `Wait ${resendCooldown}s to resend` 
+                            : 'Resend Verification Email'}
+                      </Button>
+                    </>
+                  )}
+                  
+                  <div className="text-center text-sm text-muted-foreground">
+                    <p>After verifying, please try logging in again.</p>
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      closeModal();
+                    }}
+                    variant="outline"
+                    className="w-full"
+                    disabled={resendLoading}
+                  >
+                    Close
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        )}
       </div>
     </div>
   );
