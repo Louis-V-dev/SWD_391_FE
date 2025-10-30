@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
   Heart, 
@@ -19,7 +19,9 @@ import {
   User,
   MessageCircle,
   Info,
-  Leaf
+  Leaf,
+  Loader2,
+  CheckCircle2
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -27,9 +29,10 @@ import { Badge } from '@/components/ui/Badge';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { ItemsAPI } from '@/api/items';
 
-// Mock data - in real app, this would come from API
-const itemData = {
+// Mock data for fallback
+const mockItemData = {
   id: '1',
   title: 'Vintage Denim Jacket',
   description: 'A beautiful vintage denim jacket in excellent condition. This classic piece features authentic wear patterns and has been carefully maintained. Perfect for layering and adding a timeless touch to any outfit.',
@@ -43,15 +46,12 @@ const itemData = {
   material: '100% Cotton',
   sustainabilityScore: 85,
   images: [
-    '/api/placeholder/600/600',
-    '/api/placeholder/600/600',
-    '/api/placeholder/600/600',
-    '/api/placeholder/600/600',
+    'https://via.placeholder.com/600x600?text=No+Image',
   ],
   seller: {
     id: '123',
     name: 'Sarah Johnson',
-    avatar: '/api/placeholder/100/100',
+    avatar: 'https://via.placeholder.com/100x100?text=User',
     rating: 4.8,
     reviewCount: 42,
     responseTime: '< 1 hour',
@@ -73,21 +73,103 @@ const itemData = {
 
 export default function ItemDetailPage() {
   const params = useParams();
+  const router = useRouter();
+  const [item, setItem] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
-  const [selectedSize, setSelectedSize] = useState(itemData.size);
+  const [addingToCart, setAddingToCart] = useState(false);
+
+  useEffect(() => {
+    loadItem();
+  }, [params.id]);
+
+  const loadItem = async () => {
+    try {
+      setLoading(true);
+      const itemData = await ItemsAPI.getItemById(params.id as string);
+      setItem(itemData);
+    } catch (error) {
+      console.error('Failed to load item:', error);
+      // Use mock data as fallback
+      setItem(mockItemData);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addToCart = () => {
+    if (!item) return;
+    
+    setAddingToCart(true);
+    
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    
+    const existingItem = cart.find((i: any) => i.itemId === item.itemId);
+    if (existingItem) {
+      existingItem.quantity += 1;
+    } else {
+      cart.push({
+        itemId: item.itemId,
+        itemName: item.name,
+        itemImage: item.primaryImageUrl || item.images?.[0],
+        price: item.resellPrice || item.currentEstimatedValue || 0,
+        quantity: 1,
+      });
+    }
+    
+    localStorage.setItem('cart', JSON.stringify(cart));
+    window.dispatchEvent(new Event('cartUpdated'));
+    
+    setTimeout(() => {
+      setAddingToCart(false);
+      // Show success message or redirect
+    }, 500);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!item) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Package className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-2xl font-bold mb-2">Không tìm thấy sản phẩm</h2>
+          <Button asChild>
+            <Link href="/marketplace">Quay lại marketplace</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const itemImages = item.images && item.images.length > 0 
+    ? item.images 
+    : (item.primaryImageUrl 
+        ? [item.primaryImageUrl] 
+        : ['https://via.placeholder.com/600x600?text=No+Image']);
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => 
-      prev === itemData.images.length - 1 ? 0 : prev + 1
+      prev === itemImages.length - 1 ? 0 : prev + 1
     );
   };
 
   const previousImage = () => {
     setCurrentImageIndex((prev) => 
-      prev === 0 ? itemData.images.length - 1 : prev - 1
+      prev === 0 ? itemImages.length - 1 : prev - 1
     );
   };
+
+  const price = item.resellPrice || item.currentEstimatedValue || 0;
+  const originalPrice = item.originalPrice || price * 2;
+  const discount = originalPrice > 0 ? Math.round((1 - price / originalPrice) * 100) : 0;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -127,7 +209,7 @@ export default function ItemDetailPage() {
               Marketplace
             </Link>
             <span className="text-muted-foreground">/</span>
-            <span className="text-foreground">{itemData.title}</span>
+            <span className="text-foreground">{item.name}</span>
           </div>
         </div>
       </div>
@@ -143,7 +225,7 @@ export default function ItemDetailPage() {
             <Button variant="ghost" className="mb-4" asChild>
               <Link href="/marketplace">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Marketplace
+                Quay lại Marketplace
               </Link>
             </Button>
           </motion.div>
@@ -154,9 +236,14 @@ export default function ItemDetailPage() {
               <div className="space-y-4">
                 {/* Main Image */}
                 <div className="relative aspect-square rounded-lg overflow-hidden bg-muted">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary-light/20 flex items-center justify-center">
-                    <Package className="w-32 h-32 text-primary/50" />
-                  </div>
+                  <img
+                    src={itemImages[currentImageIndex]}
+                    alt={`${item.name} - Image ${currentImageIndex + 1}`}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://via.placeholder.com/600x600?text=No+Image';
+                    }}
+                  />
                   
                   {/* Navigation Arrows */}
                   <Button
@@ -178,13 +265,23 @@ export default function ItemDetailPage() {
 
                   {/* Image Counter */}
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-                    {currentImageIndex + 1} / {itemData.images.length}
+                    {currentImageIndex + 1} / {itemImages.length}
                   </div>
+                  
+                  {/* Verified Badge */}
+                  {item.isVerified && (
+                    <div className="absolute top-4 left-4">
+                      <Badge className="bg-green-500">
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        Đã xác minh
+                      </Badge>
+                  </div>
+                  )}
                 </div>
 
                 {/* Thumbnail Images */}
                 <div className="grid grid-cols-4 gap-2">
-                  {itemData.images.map((_, index) => (
+                  {itemImages.map((_img: string, index: number) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
@@ -194,9 +291,14 @@ export default function ItemDetailPage() {
                           : 'border-transparent hover:border-border'
                       }`}
                     >
-                      <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <Package className="w-8 h-8 text-muted-foreground" />
-                      </div>
+                      <img 
+                        src={_img} 
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://via.placeholder.com/100x100?text=No+Image';
+                        }}
+                      />
                     </button>
                   ))}
                 </div>
@@ -209,13 +311,12 @@ export default function ItemDetailPage() {
               <div>
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h1 className="text-3xl font-bold mb-2">{itemData.title}</h1>
+                    <h1 className="text-3xl font-bold mb-2">{item.name}</h1>
                     <div className="flex items-center space-x-4">
-                      <Badge variant="secondary">{itemData.condition}</Badge>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Leaf className="w-4 h-4 mr-1 text-green-500" />
-                        {itemData.sustainabilityScore}% Sustainable
-                      </div>
+                      <Badge variant="secondary">{item.conditionText || 'Tốt'}</Badge>
+                      {item.brandName && (
+                        <Badge variant="outline">{item.brandName}</Badge>
+                      )}
                     </div>
                   </div>
                   
@@ -235,51 +336,68 @@ export default function ItemDetailPage() {
 
                 {/* Price */}
                 <div className="flex items-baseline space-x-4 mb-6">
-                  <span className="text-4xl font-bold text-primary">${itemData.price}</span>
+                  <span className="text-4xl font-bold text-primary">{price.toLocaleString()} điểm</span>
+                  {originalPrice > price && (
+                    <>
                   <span className="text-xl text-muted-foreground line-through">
-                    ${itemData.originalPrice}
+                        {originalPrice.toLocaleString()} điểm
                   </span>
                   <Badge variant="destructive">
-                    {Math.round((1 - itemData.price / itemData.originalPrice) * 100)}% off
+                        -{discount}%
                   </Badge>
+                    </>
+                  )}
                 </div>
 
                 {/* Description */}
                 <p className="text-muted-foreground leading-relaxed">
-                  {itemData.description}
+                  {item.description || 'Không có mô tả'}
                 </p>
               </div>
 
               {/* Item Specifications */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Item Details</CardTitle>
+                  <CardTitle className="text-lg">Chi tiết sản phẩm</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
+                    {item.brandName && (
                     <div>
-                      <span className="text-sm text-muted-foreground">Brand</span>
-                      <p className="font-medium">{itemData.brand}</p>
+                        <span className="text-sm text-muted-foreground">Thương hiệu</span>
+                        <p className="font-medium">{item.brandName}</p>
                     </div>
+                    )}
+                    {item.size && (
                     <div>
                       <span className="text-sm text-muted-foreground">Size</span>
-                      <p className="font-medium">{itemData.size}</p>
+                        <p className="font-medium">{item.size}</p>
+                    </div>
+                    )}
+                    {item.color && (
+                    <div>
+                        <span className="text-sm text-muted-foreground">Màu sắc</span>
+                        <p className="font-medium">{item.color}</p>
+                    </div>
+                    )}
+                    {item.categoryName && (
+                    <div>
+                        <span className="text-sm text-muted-foreground">Danh mục</span>
+                        <p className="font-medium">{item.categoryName}</p>
+                    </div>
+                    )}
+                    <div>
+                      <span className="text-sm text-muted-foreground">Tình trạng</span>
+                      <p className="font-medium">{item.conditionText || 'Tốt'}</p>
                     </div>
                     <div>
-                      <span className="text-sm text-muted-foreground">Color</span>
-                      <p className="font-medium">{itemData.color}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-muted-foreground">Material</span>
-                      <p className="font-medium">{itemData.material}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-muted-foreground">Category</span>
-                      <p className="font-medium">{itemData.category}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-muted-foreground">Condition</span>
-                      <p className="font-medium">{itemData.condition}</p>
+                      <span className="text-sm text-muted-foreground">Trạng thái</span>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{item.itemStatus}</p>
+                        {item.isVerified && (
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -289,19 +407,12 @@ export default function ItemDetailPage() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center space-x-4">
-                    <Truck className="w-5 h-5 text-primary" />
+                    <Package className="w-5 h-5 text-primary" />
                     <div>
-                      <p className="font-medium">
-                        {itemData.shipping.cost === 0 ? 'Free shipping' : `$${itemData.shipping.cost} shipping`}
-                      </p>
+                      <p className="font-medium">Giao hàng miễn phí</p>
                       <p className="text-sm text-muted-foreground">
-                        Estimated delivery: {itemData.shipping.estimatedDays} business days
+                        Ước tính giao hàng: 3-5 ngày làm việc
                       </p>
-                      {itemData.price < itemData.shipping.freeShippingThreshold && (
-                        <p className="text-sm text-muted-foreground">
-                          Free shipping on orders over ${itemData.shipping.freeShippingThreshold}
-                        </p>
-                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -309,20 +420,34 @@ export default function ItemDetailPage() {
 
               {/* Actions */}
               <div className="space-y-3">
-                <Button size="lg" className="w-full">
+                <Button 
+                  size="lg" 
+                  className="w-full" 
+                  onClick={addToCart}
+                  disabled={addingToCart}
+                >
+                  {addingToCart ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Đang thêm...
+                    </>
+                  ) : (
+                    <>
                   <ShoppingBag className="w-4 h-4 mr-2" />
-                  Add to Cart
+                      Thêm vào giỏ hàng
+                    </>
+                  )}
                 </Button>
                 <Button variant="outline" size="lg" className="w-full">
                   <MessageCircle className="w-4 h-4 mr-2" />
-                  Message Seller
+                  Nhắn tin người bán
                 </Button>
               </div>
 
               {/* Seller Info */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Seller Information</CardTitle>
+                  <CardTitle className="text-lg">Thông tin người bán</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-start space-x-4">
@@ -330,75 +455,42 @@ export default function ItemDetailPage() {
                       <User className="w-6 h-6 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h3 className="font-semibold">{itemData.seller.name}</h3>
-                        <Badge variant="outline" className="text-xs">
-                          {itemData.seller.sustainabilityBadge}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex items-center space-x-4 mb-3">
-                        <div className="flex items-center">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" />
-                          <span className="font-medium">{itemData.seller.rating}</span>
-                          <span className="text-muted-foreground text-sm ml-1">
-                            ({itemData.seller.reviewCount} reviews)
-                          </span>
-                        </div>
-                      </div>
+                      <h3 className="font-semibold mb-2">{item.currentOwnerName || item.ownerName || 'Green Loop'}</h3>
 
                       <div className="space-y-2 text-sm text-muted-foreground">
                         <div className="flex items-center">
                           <MapPin className="w-4 h-4 mr-2" />
-                          {itemData.seller.location}
-                        </div>
-                        <div className="flex items-center">
-                          <Calendar className="w-4 h-4 mr-2" />
-                          Joined {itemData.seller.joinedDate}
-                        </div>
-                        <div className="flex items-center">
-                          <MessageCircle className="w-4 h-4 mr-2" />
-                          Usually responds in {itemData.seller.responseTime}
+                          Việt Nam
                         </div>
                       </div>
-
-                      <Button variant="outline" size="sm" className="mt-4" asChild>
-                        <Link href={`/profile/${itemData.seller.id}`}>
-                          View Profile
-                        </Link>
-                      </Button>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Tags */}
+              {item.tags && item.tags.length > 0 && (
               <div>
                 <h3 className="font-semibold mb-3">Tags</h3>
                 <div className="flex flex-wrap gap-2">
-                  {itemData.tags.map((tag) => (
+                    {item.tags.map((tag: string) => (
                     <Badge key={tag} variant="secondary">
                       #{tag}
                     </Badge>
                   ))}
                 </div>
               </div>
+              )}
 
               {/* Item Stats */}
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                 <div className="text-center">
-                  <p className="text-2xl font-bold">{itemData.views}</p>
-                  <p className="text-sm text-muted-foreground">Views</p>
+                  <p className="text-2xl font-bold">{item.viewCount || 0}</p>
+                  <p className="text-sm text-muted-foreground">Lượt xem</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold">{itemData.favorites}</p>
-                  <p className="text-sm text-muted-foreground">Favorites</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold">
-                    {Math.floor((Date.now() - new Date(itemData.postedDate).getTime()) / (1000 * 60 * 60 * 24))}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Days Listed</p>
+                  <p className="text-2xl font-bold">{item.likeCount || 0}</p>
+                  <p className="text-sm text-muted-foreground">Yêu thích</p>
                 </div>
               </div>
             </motion.div>
@@ -406,7 +498,7 @@ export default function ItemDetailPage() {
 
           {/* Related Items */}
           <motion.div variants={itemVariants} className="mt-16">
-            <h2 className="text-2xl font-bold mb-6">Similar Items</h2>
+            <h2 className="text-2xl font-bold mb-6">Sản phẩm tương tự</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[1, 2, 3, 4].map((item) => (
                 <Card key={item} className="group cursor-pointer hover:shadow-lg transition-shadow">

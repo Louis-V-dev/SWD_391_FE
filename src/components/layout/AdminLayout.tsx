@@ -19,7 +19,9 @@ import {
   Recycle,
   AlertCircle,
   Building2,
-  FolderTree
+  FolderTree,
+  Gift,
+  ShoppingCart
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -37,6 +39,7 @@ const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Items', href: '/admin/items', icon: Package },
+  { name: 'Donations', href: '/admin/donations', icon: Gift },
   { name: 'Brands', href: '/admin/brands', icon: Building2 },
   { name: 'Categories', href: '/admin/categories', icon: FolderTree },
   { name: 'Listings', href: '/admin/listings', icon: ShoppingBag },

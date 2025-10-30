@@ -13,7 +13,9 @@ import {
   Search,
   LogOut,
   Settings,
-  ChevronDown
+  ChevronDown,
+  Gift,
+  ShoppingBag
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -37,9 +39,34 @@ export default function Header({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const { user, logout } = useAuth();
+  const [cartCount, setCartCount] = useState(0);
+  const { user, userPoints, logout } = useAuth();
   const pathname = usePathname();
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Update cart count from localStorage
+  useEffect(() => {
+    const updateCartCount = () => {
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      setCartCount(cart.reduce((sum: number, item: any) => sum + item.quantity, 0));
+    };
+
+    updateCartCount();
+    
+    // Listen for cart updates
+    window.addEventListener('storage', updateCartCount);
+    window.addEventListener('cartUpdated', updateCartCount);
+    
+    return () => {
+      window.removeEventListener('storage', updateCartCount);
+      window.removeEventListener('cartUpdated', updateCartCount);
+    };
+  }, []);
+
+  // Force re-render when userPoints changes
+  useEffect(() => {
+    // This will cause the component to re-render when points are updated from DB
+  }, [userPoints]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -58,8 +85,6 @@ export default function Header({
   const navigation = [
     { name: 'Home', href: '/', current: pathname === '/' },
     { name: 'Marketplace', href: '/marketplace', current: pathname === '/marketplace' },
-    { name: 'Profile', href: '/profile', current: pathname === '/profile' },
-    { name: 'Admin', href: '/admin', current: pathname.startsWith('/admin') },
   ];
 
   const handleSearch = (e: React.FormEvent) => {
@@ -145,6 +170,31 @@ export default function Header({
               </div>
             )}
 
+            {/* User Points - Always from Database */}
+            {user && (
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full">
+                <svg className="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
+                </svg>
+                <span className="text-sm font-semibold text-primary">
+                  {userPoints.toLocaleString()}
+                </span>
+              </div>
+            )}
+
+            {/* Shopping Cart */}
+            <Link href="/cart" className="relative">
+              <Button variant="ghost" size="icon">
+                <ShoppingBag className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
+
             {/* Notifications */}
             {showNotifications && (
               <Button variant="ghost" size="icon">
@@ -193,16 +243,35 @@ export default function Header({
                               <p className="text-xs text-muted-foreground truncate">
                                 {user.email}
                               </p>
+                              <div className="flex items-center gap-2 mt-2 px-2 py-1 bg-primary/10 rounded text-primary">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
+                                </svg>
+                                <span className="text-xs font-semibold">
+                                  {userPoints.toLocaleString()} điểm
+                                </span>
+                              </div>
                             </div>
 
                             {/* Menu Items */}
+
                             <Link
-                              href="/profile"
+                              href="/profile/donations"
                               className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
                               onClick={() => setUserMenuOpen(false)}
                             >
-                              <User className="mr-3 h-4 w-4" />
-                              Profile
+                              <Gift className="mr-3 h-4 w-4" />
+                              My Donations
+                            </Link>
+
+                            <Link
+                              href="/profile/orders"
+                              className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
+                              onClick={() => setUserMenuOpen(false)}
+                            >
+                              <ShoppingBag className="mr-3 h-4 w-4" />
+                              My Orders
                             </Link>
 
                             <Link
@@ -214,17 +283,6 @@ export default function Header({
                               Settings
                             </Link>
 
-                            {/* Admin Link - Only show for admin/staff */}
-                            {hasAdminAccess(user) && (
-                              <Link
-                                href="/admin"
-                                className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
-                                onClick={() => setUserMenuOpen(false)}
-                              >
-                                <Settings className="mr-3 h-4 w-4" />
-                                Admin Panel
-                              </Link>
-                            )}
 
                             <div className="border-t border-border my-1"></div>
 

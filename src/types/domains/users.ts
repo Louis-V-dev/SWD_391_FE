@@ -11,7 +11,7 @@ export interface User {
   role: 'USER' | 'ADMIN' | 'STAFF';
   avatarUrl?: string;
   bio?: string;
-  sustainabilityPoints: number;
+  sustainabilityPoints?: number; // Optional - fetched separately via userPoints from AuthContext
   sustainabilityScore: number;
   trustScore: number;
   isVerified: boolean;
