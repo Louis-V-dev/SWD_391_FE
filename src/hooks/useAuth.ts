@@ -1,10 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { AuthAPI } from '@/api';
 import type { LoginRequest, RegisterRequest, LoginResponse, UserResponse } from '@/types';
 
+interface User {
+  userId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  username?: string;
+  role: string;
+  sustainabilityScore?: number;
+  emailVerified: boolean;
+}
+
 interface UseAuthReturn {
+  user: User | null;
   isLoading: boolean;
   error: string | null;
   login: (credentials: LoginRequest) => Promise<LoginResponse>;
@@ -20,9 +32,24 @@ interface UseAuthReturn {
  * Provides loading states, error handling, and automatic navigation
  */
 export const useAuth = (): UseAuthReturn => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  // Load user from cookies on mount
+  useEffect(() => {
+    const userDataStr = Cookies.get('user_data');
+    if (userDataStr) {
+      try {
+        const userData = JSON.parse(userDataStr);
+        setUser(userData);
+      } catch (err) {
+        console.error('Failed to parse user data:', err);
+      }
+    }
+    setIsLoading(false);
+  }, []);
 
   const login = async (credentials: LoginRequest): Promise<LoginResponse> => {
     setIsLoading(true);
@@ -32,16 +59,19 @@ export const useAuth = (): UseAuthReturn => {
       const response = await AuthAPI.login(credentials);
       
       // Store auth data
-      Cookies.set('auth_token', response.token, { expires: 1 }); // 1 day
-      Cookies.set('user_data', JSON.stringify({
+      Cookies.set('auth_token', response.accessToken, { expires: 1 }); // 1 day
+      const userData = {
         userId: response.userId,
         email: response.email,
         firstName: response.firstName,
         lastName: response.lastName,
+        username: response.username || response.email,
         role: response.role,
         sustainabilityScore: response.sustainabilityScore,
         emailVerified: response.emailVerified
-      }), { expires: 1 });
+      };
+      Cookies.set('user_data', JSON.stringify(userData), { expires: 1 });
+      setUser(userData);
       
       return response;
     } catch (err) {
@@ -71,6 +101,7 @@ export const useAuth = (): UseAuthReturn => {
 
   const logout = (): void => {
     AuthAPI.logout();
+    setUser(null);
     router.push('/auth/login');
   };
 
@@ -123,6 +154,7 @@ export const useAuth = (): UseAuthReturn => {
   };
 
   return {
+    user,
     isLoading,
     error,
     login,
