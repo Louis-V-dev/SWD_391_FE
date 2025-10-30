@@ -18,7 +18,7 @@ export interface User {
   gender?: string;
   role: Role;
   sustainabilityScore: number;
-  sustainabilityPoints: number; // Added points field
+  sustainabilityPoints?: number; // Optional - fetched separately via userPoints from AuthContext
   trustScore: number; // Added trust score
   createdAt: string;
   updatedAt: string;
@@ -60,7 +60,7 @@ export interface LoginResponse {
   username?: string;
   role: Role;
   sustainabilityScore: number;
-  sustainabilityPoints: number; // Added points field
+  sustainabilityPoints?: number; // Optional - fetched separately via userPoints from AuthContext
   emailVerified: boolean;
   phoneVerified: boolean; // Added phone verification
 }
@@ -73,7 +73,7 @@ export interface UserResponse {
   username?: string;
   role: Role;
   sustainabilityScore: number;
-  sustainabilityPoints: number; // Added points field
+  sustainabilityPoints?: number; // Optional - fetched separately via userPoints from AuthContext
   emailVerified: boolean;
   phoneVerified: boolean; // Added phone verification
   avatarUrl?: string;

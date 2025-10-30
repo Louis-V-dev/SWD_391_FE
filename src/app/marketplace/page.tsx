@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   Search, 
   Filter, 
@@ -11,21 +12,20 @@ import {
   Heart, 
   MapPin,
   SlidersHorizontal,
+  ShoppingCart,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { ItemsAPI, CategoriesAPI, BrandsAPI } from '@/api/items';
+import { ItemStatus } from '@/types/domains/items';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
-const categories = [
-  'All Categories', 'Clothing', 'Shoes', 'Accessories', 'Bags', 'Jewelry'
-];
-
+// Dynamic sizes and conditions from backend data
 const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-const conditions = ['New', 'Like New', 'Good', 'Fair'];
 const priceRanges = ['Under $25', '$25-$50', '$50-$100', 'Over $100'];
 
 const mockItems = [
@@ -123,11 +123,104 @@ const mockItems = [
 
 export default function MarketplacePage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [brands, setBrands] = useState<any[]>([]);
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
-  const [items, setItems] = useState(mockItems);
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const { user } = useAuth();
+  const router = useRouter();
+
+  // Load categories and brands on mount
+  useEffect(() => {
+    loadCategories();
+    loadBrands();
+  }, []);
+
+  useEffect(() => {
+    loadItems();
+  }, [currentPage, selectedCategory, selectedBrand, verifiedOnly]);
+
+  const loadCategories = async () => {
+    try {
+      const cats = await CategoriesAPI.getActiveCategories();
+      setCategories(cats);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+    }
+  };
+
+  const loadBrands = async () => {
+    try {
+      const brandsData = await BrandsAPI.getActiveBrands();
+      setBrands(brandsData);
+    } catch (error) {
+      console.error('Failed to load brands:', error);
+    }
+  };
+
+  const loadItems = async () => {
+    try {
+      setLoading(true);
+      // Fetch items with status READY_FOR_SALE only
+      const filters: any = {
+        statuses: [ItemStatus.READY_FOR_SALE],
+        page: currentPage,
+        size: 12
+      };
+      
+      // Add category filter if selected
+      if (selectedCategory) {
+        filters.categoryId = selectedCategory;
+      }
+      
+      // Add brand filter if selected
+      if (selectedBrand) {
+        filters.brandId = selectedBrand;
+      }
+      
+      const response = await ItemsAPI.filterItems(filters);
+      
+      // Filter verified items on frontend if needed (or add backend support)
+      let resultItems = response.content;
+      if (verifiedOnly) {
+        resultItems = resultItems.filter((item: any) => item.isVerified);
+      }
+      
+      // Transform backend response to match UI expectations
+      const transformed = resultItems.map((item: any) => ({
+        id: item.itemId,
+        title: item.name,
+        price: item.resellPrice || item.estimatedValue || 0,
+        originalPrice: item.originalPrice,
+        brand: item.brandName,
+        condition: item.conditionText || 'Good',
+        size: item.size,
+        image: item.primaryImageUrl || (item.images && item.images.length > 0 ? item.images[0] : 'https://via.placeholder.com/300x300?text=No+Image'),
+        seller: item.ownerName || 'Green Loop',
+        location: 'Vietnam',
+        sustainabilityScore: Math.round((item.conditionScore / 5) * 100) || 75,
+        likes: 0,
+        isLiked: false,
+        itemId: item.itemId, // UUID for cart
+      }));
+      
+      setItems(transformed);
+      setTotalPages(response.totalPages);
+    } catch (error) {
+      console.error('Failed to load items:', error);
+      // Fallback to mock data
+      setItems(mockItems);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleLike = (itemId: number) => {
     setItems(items.map(item => 
@@ -135,6 +228,35 @@ export default function MarketplacePage() {
         ? { ...item, isLiked: !item.isLiked, likes: item.isLiked ? item.likes - 1 : item.likes + 1 }
         : item
     ));
+  };
+
+  const addToCart = (item: any) => {
+    if (!item.itemId) {
+      alert('Cannot add this item to cart (missing ID)');
+      return;
+    }
+
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    
+    const existingItem = cart.find((i: any) => i.itemId === item.itemId);
+    if (existingItem) {
+      existingItem.quantity += 1;
+    } else {
+      cart.push({
+        itemId: item.itemId,
+        itemName: item.title,
+        itemImage: item.image,
+        price: item.price,
+        quantity: 1,
+      });
+    }
+    
+    localStorage.setItem('cart', JSON.stringify(cart));
+    
+    // Trigger cart update event for header badge
+    window.dispatchEvent(new Event('cartUpdated'));
+    
+    alert(`Added ${item.title} to cart!`);
   };
 
   const containerVariants = {
@@ -223,14 +345,21 @@ export default function MarketplacePage() {
 
             {/* Categories */}
             <div className="flex flex-wrap gap-2">
+              <Button
+                variant={selectedCategory === null ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSelectedCategory(null)}
+              >
+                Tất cả
+              </Button>
               {categories.map((category) => (
                 <Button
-                  key={category}
-                  variant={selectedCategory === category ? 'default' : 'outline'}
+                  key={category.categoryId}
+                  variant={selectedCategory === category.categoryId ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setSelectedCategory(category)}
+                  onClick={() => setSelectedCategory(category.categoryId)}
                 >
-                  {category}
+                  {category.name}
                 </Button>
               ))}
             </div>
@@ -256,21 +385,37 @@ export default function MarketplacePage() {
                   </div>
                   
                   <div>
-                    <h3 className="font-medium mb-3">Condition</h3>
-                    <div className="space-y-2">
-                      {conditions.map((condition) => (
-                        <label key={condition} className="flex items-center space-x-2">
-                          <input type="checkbox" className="rounded" />
-                          <span className="text-sm">{condition}</span>
+                    <h3 className="font-medium mb-3">Thương hiệu</h3>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {brands.map((brand) => (
+                        <label key={brand.brandId} className="flex items-center space-x-2">
+                          <input 
+                            type="radio" 
+                            name="brand" 
+                            className="rounded"
+                            checked={selectedBrand === brand.brandId}
+                            onChange={() => setSelectedBrand(brand.brandId)}
+                          />
+                          <span className="text-sm">{brand.name}</span>
                         </label>
                       ))}
                     </div>
+                    {selectedBrand && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setSelectedBrand(null)}
+                        className="mt-2"
+                      >
+                        Xóa bộ lọc
+                      </Button>
+                    )}
                   </div>
                   
                   <div>
-                    <h3 className="font-medium mb-3">Price Range</h3>
+                    <h3 className="font-medium mb-3">Khoảng giá (điểm)</h3>
                     <div className="space-y-2">
-                      {priceRanges.map((range) => (
+                      {['Dưới 100k', '100k-300k', '300k-500k', 'Trên 500k'].map((range) => (
                         <label key={range} className="flex items-center space-x-2">
                           <input type="radio" name="priceRange" className="rounded" />
                           <span className="text-sm">{range}</span>
@@ -280,19 +425,16 @@ export default function MarketplacePage() {
                   </div>
                   
                   <div>
-                    <h3 className="font-medium mb-3">Sustainability Score</h3>
+                    <h3 className="font-medium mb-3">Khác</h3>
                     <div className="space-y-2">
                       <label className="flex items-center space-x-2">
-                        <input type="checkbox" className="rounded" />
-                        <span className="text-sm">90%+ (Excellent)</span>
-                      </label>
-                      <label className="flex items-center space-x-2">
-                        <input type="checkbox" className="rounded" />
-                        <span className="text-sm">80%+ (Very Good)</span>
-                      </label>
-                      <label className="flex items-center space-x-2">
-                        <input type="checkbox" className="rounded" />
-                        <span className="text-sm">70%+ (Good)</span>
+                        <input 
+                          type="checkbox" 
+                          className="rounded"
+                          checked={verifiedOnly}
+                          onChange={(e) => setVerifiedOnly(e.target.checked)}
+                        />
+                        <span className="text-sm">Chỉ hiện đã xác minh</span>
                       </label>
                     </div>
                   </div>
@@ -317,8 +459,15 @@ export default function MarketplacePage() {
                 >
                   <Card className="overflow-hidden transition-shadow hover:shadow-lg">
                     <div className="relative">
-                      <div className="aspect-square bg-muted flex items-center justify-center">
-                        <div className="text-muted-foreground">Image</div>
+                      <div className="aspect-square bg-muted overflow-hidden">
+                        <img 
+                          src={item.image} 
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://via.placeholder.com/300x300?text=No+Image';
+                          }}
+                        />
                       </div>
                       
                       {/* Overlays */}
@@ -342,7 +491,7 @@ export default function MarketplacePage() {
                     
                     <CardContent className="p-4">
                       <div className="space-y-2">
-                        <Link href={`/item/${item.id}`}>
+                        <Link href={`/item/${item.itemId}`}>
                           <h3 className="font-medium hover:text-primary transition-colors line-clamp-2">
                             {item.title}
                           </h3>
@@ -374,9 +523,17 @@ export default function MarketplacePage() {
                           <span>{item.seller} • {item.location}</span>
                         </div>
                         
-                        <Button className="w-full" asChild>
-                          <Link href={`/item/${item.id}`}>
-                            View Details
+                        <Button
+                          onClick={() => addToCart(item)}
+                          className="w-full mt-3 bg-primary hover:bg-primary/90"
+                        >
+                          <ShoppingCart className="h-4 w-4 mr-2" />
+                          Add to Cart
+                        </Button>
+                        
+                        <Button className="w-full" variant="outline" asChild>
+                          <Link href={`/item/${item.itemId}`}>
+                            Xem chi tiết
                           </Link>
                         </Button>
                       </div>

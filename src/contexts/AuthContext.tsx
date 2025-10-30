@@ -13,6 +13,7 @@ import type {
 
 interface AuthContextType {
   user: User | null;
+  userPoints: number;
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -21,14 +22,40 @@ interface AuthContextType {
   logout: () => void;
   verifyEmail: (token: string) => Promise<string>;
   updateUser: (userData: Partial<User>) => void;
+  refreshPoints: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [userPoints, setUserPoints] = useState<number>(0);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch points from database
+  const fetchPointsFromDB = async (userId: string) => {
+    try {
+      const { default: axios } = await import('axios');
+      const authToken = Cookies.get('auth_token');
+      
+      if (!authToken) return;
+      
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}/api/points/${userId}/available`,
+        {
+          headers: { Authorization: `Bearer ${authToken}` }
+        }
+      );
+      
+      const points = response.data.data || response.data || 0;
+      setUserPoints(points);
+      console.log('✅ Points loaded from DB:', points);
+    } catch (err) {
+      console.error('Failed to fetch points:', err);
+      setUserPoints(0);
+    }
+  };
 
   useEffect(() => {
     // Check for existing auth data on mount
@@ -46,6 +73,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         setToken(storedToken);
         setUser(userData);
+        
+        // Fetch points from database (not cookies)
+        if (userData.userId) {
+          fetchPointsFromDB(userData.userId);
+        }
       } catch (error) {
         console.error('Error parsing stored user data:', error);
         Cookies.remove('auth_token');
@@ -81,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         username: userData.username,
         role: userData.role,
         sustainabilityScore: userData.sustainabilityScore,
-        sustainabilityPoints: userData.sustainabilityPoints,
+        // sustainabilityPoints removed - fetched from DB
         trustScore: 5.0,
         emailVerified: userData.emailVerified,
         phoneVerified: userData.phoneVerified,
@@ -106,6 +138,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(fullToken);
       setUser(userDataToStore);
       
+      // Fetch points from database
+      await fetchPointsFromDB(userData.userId);
+      
       console.log('✅ AuthContext: Login completed successfully');
     } catch (error) {
       console.error('❌ AuthContext: Login failed, re-throwing error');
@@ -128,6 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('🚪 AuthContext: Logging out');
     
     setUser(null);
+    setUserPoints(0);
     setToken(null);
     
     Cookies.remove('auth_token');
@@ -163,8 +199,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshPoints = async (): Promise<void> => {
+    if (user?.userId) {
+      await fetchPointsFromDB(user.userId);
+    }
+  };
+
   const value: AuthContextType = {
     user,
+    userPoints,
     token,
     isLoading,
     isAuthenticated: !!user && !!token,
@@ -173,6 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
     verifyEmail,
     updateUser,
+    refreshPoints,
   };
 
   return (
