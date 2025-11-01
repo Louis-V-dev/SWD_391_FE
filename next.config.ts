@@ -1,9 +1,5 @@
 import type { NextConfig } from "next";
-
 const nextConfig: NextConfig = {
-  // ✨ Static Export Configuration for Azure Static Web Apps
-  output: 'export',
-  
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -11,9 +7,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // ✨ Image Optimization - Modified for static export
+  // ✨ Image Optimization - Massive performance boost!
   images: {
-    unoptimized: true, // Required for static export
     remotePatterns: [
       {
         protocol: 'https',
@@ -26,11 +21,8 @@ const nextConfig: NextConfig = {
       },
     ],
     formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
   },
-  
-  // ✨ Trailing slash for better static hosting compatibility
-  trailingSlash: true,
-  
   // ✨ Performance Optimizations
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
@@ -53,5 +45,4 @@ const nextConfig: NextConfig = {
     return config;
   },
 };
-
 export default nextConfig;
