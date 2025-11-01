@@ -32,6 +32,16 @@ jobs:
                const coredemo = require('@actions/core')
                return await coredemo.getIDToken()
            result-encoding: string
+      - name: Debug SWA Token
+        env:
+          SWA_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_ORANGE_COAST_051D0540F }}
+        run: |
+          python - <<'PY'
+          import hashlib, os
+          token = os.environ.get("SWA_TOKEN", "")
+          print("token_length:", len(token))
+          print("token_sha256:", hashlib.sha256(token.encode()).hexdigest())
+          PY
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
