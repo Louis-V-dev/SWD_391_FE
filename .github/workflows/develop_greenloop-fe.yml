@@ -8,7 +8,7 @@ defaults:
     working-directory: .
 
 env:
-  AZURE_WEBAPP_NAME: greenloop-fe-d7b5b9gpgjfweecm
+  AZURE_WEBAPP_NAME: greenloop-fe
   NODE_VERSION: '20.x'
   ARTIFACT_NAME: next-app
   PACKAGE_FILE: release.zip
