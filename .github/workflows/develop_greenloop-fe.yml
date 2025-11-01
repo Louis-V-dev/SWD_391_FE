@@ -41,23 +41,13 @@ jobs:
       - name: Prepare standalone bundle
         run: |
           mkdir -p deploy
-          
-          # Copy standalone server files
           cp -R .next/standalone/* deploy/
-          
-          # Copy static files
           mkdir -p deploy/.next/static
           cp -R .next/static deploy/.next/static
-          
-          # Copy public folder if exists
           if [ -d "public" ]; then 
             cp -R public deploy/public
           fi
-          
-          # Create package.json for Azure
           echo '{"scripts":{"start":"node server.js"}}' > deploy/package.json
-          
-          # Zip the deployment
           cd deploy
           zip -r ../${{ env.PACKAGE_FILE }} .
       
@@ -76,7 +66,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    
     steps:
       - name: Download deployment artifact
         uses: actions/download-artifact@v4
@@ -90,19 +79,9 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_5BDDA74B6D67459DAB70E4A798ECC0CA }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_14074202807C4F48928A475E333A61AB }}
       
-      - name: 'Deploy to Azure Web App'
+      - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           package: ${{ env.PACKAGE_FILE }}
-```
-
-## 3. Update Azure App Service Startup Command
-
-In Azure Portal:
-1. Go to your App Service **greenloop-fe**
-2. Navigate to **Configuration** → **General settings**
-3. Set **Startup Command** to:
-```
-   node server.js
