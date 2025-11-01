@@ -10,7 +10,7 @@ import CallEndModal from '@/components/VideoCall/CallEndModal';
 import WaitingForReceiverModal from '@/components/VideoCall/WaitingForReceiverModal';
 
 const VideoCallContext = createContext<any>(null);
-const WEBSOCKET_URL = 'http://localhost:8080/api/ws'; // Fixed: Added /api prefix
+const WEBSOCKET_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/api/ws';
 const CALL_TIMEOUT_MS = 30000;
 
 const CALL_STATES = {

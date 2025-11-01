@@ -270,8 +270,8 @@ export default function UsersManagementPage() {
                           </td>
                           <td className="py-4 px-4">
                             <div className="text-sm">
-                              <p className="font-medium text-green-600">{user.sustainabilityPoints.toLocaleString()}</p>
-                              <p className="text-muted-foreground">Eco: {user.sustainabilityScore.toFixed(1)}/10</p>
+                              <p className="font-medium text-green-600">{user.sustainabilityPoints?.toLocaleString() ?? '0'}</p>
+                              <p className="text-muted-foreground">Eco: {user.sustainabilityScore?.toFixed(1) ?? '0.0'}/10</p>
                             </div>
                           </td>
                           <td className="py-4 px-4">
