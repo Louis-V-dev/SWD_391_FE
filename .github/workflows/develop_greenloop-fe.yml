@@ -36,6 +36,14 @@ jobs:
         run: npm ci
       
       - name: Build application
+        env:
+          NEXT_PUBLIC_API_URL: https://greenloop-heb0bffxh4h4e0hy.canadacentral-01.azurewebsites.net
+          NEXT_PUBLIC_API_BASE_URL: https://greenloop-heb0bffxh4h4e0hy.canadacentral-01.azurewebsites.net
+          NEXT_PUBLIC_WS_URL: wss://greenloop-heb0bffxh4h4e0hy.canadacentral-01.azurewebsites.net/api/ws
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: 1093884420538-ka17a3efctfkv117f1lqotu4uusgokn9.apps.googleusercontent.com
+          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: dmpjc496u
+          NEXT_PUBLIC_CLOUDINARY_API_KEY: 867162548936863
+          NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: ml_default
         run: npm run build
       
       - name: Prepare standalone bundle
