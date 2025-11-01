@@ -40,14 +40,18 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Prune dev dependencies
-        run: npm prune --omit=dev
-
-      - name: Archive production package
+      - name: Prepare standalone bundle
         run: |
-          FILES=".next public node_modules package.json package-lock.json next.config.ts"
-          if [ -f next-env.d.ts ]; then FILES="$FILES next-env.d.ts"; fi
-          zip -r "${{ env.PACKAGE_FILE }}" $FILES
+          mkdir -p deploy/.next
+          cp -R .next/static deploy/.next/
+          cp -R .next/standalone/* deploy/
+          if [ -d public ]; then cp -R public deploy/public; fi
+          if [ -f next-env.d.ts ]; then cp next-env.d.ts deploy/; fi
+          cd deploy
+          zip -r ../${{ env.PACKAGE_FILE }} .
+
+      - name: Clean up temporary bundle
+        run: rm -rf deploy
 
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
