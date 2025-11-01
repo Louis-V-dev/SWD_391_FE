@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export default function ApiTestPage() {
   const [testResult, setTestResult] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
   const testApiConnection = async () => {
     setIsLoading(true);
@@ -20,7 +21,7 @@ export default function ApiTestPage() {
         password: 'testpassword'
       };
       
-      const response = await fetch('http://localhost:8080/api/auth/login', {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -49,7 +50,7 @@ export default function ApiTestPage() {
     setTestResult('Testing health endpoint...');
     
     try {
-      const response = await fetch('http://localhost:8080/actuator/health');
+      const response = await fetch(`${API_URL}/actuator/health`);
       if (response.ok) {
         const data = await response.json();
         setTestResult(`✅ Health endpoint working! Status: ${data.status}`);
@@ -109,7 +110,7 @@ export default function ApiTestPage() {
               )}
               
               <div className="text-xs text-muted-foreground space-y-1">
-                <p><strong>Backend URL:</strong> http://localhost:8080</p>
+                <p><strong>Backend URL:</strong> {API_URL}</p>
                 <p><strong>Health Endpoint:</strong> /actuator/health</p>
                 <p><strong>Login Endpoint:</strong> /api/auth/login</p>
               </div>
