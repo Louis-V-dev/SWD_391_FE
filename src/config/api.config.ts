@@ -3,25 +3,32 @@
  * Centralized configuration for all API endpoints and WebSocket URLs
  * 
  * IMPORTANT: Set NEXT_PUBLIC_API_URL in your deployment environment!
- * - Vercel: Project Settings > Environment Variables
- * - Netlify: Site Settings > Build & Deploy > Environment
- * - Docker: docker-compose.yml or .env file
  */
 
 /**
  * Get the API base URL from environment variables
  * Falls back to localhost ONLY if not set (development fallback)
  * 
- * @throws {Error} In production if NEXT_PUBLIC_API_URL is not set
+ * @throws {Error} In production if NEXT_PUBLIC_API_URL is not set or contains localhost
  */
 function getApiUrl(): string {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   
-  // In production, throw error if API URL is not configured
-  if (process.env.NODE_ENV === 'production' && !apiUrl) {
-    console.error('❌ CRITICAL: NEXT_PUBLIC_API_URL is not set in production!');
-    console.error('Please set this environment variable in your deployment platform.');
-    throw new Error('API URL is not configured. Please contact system administrator.');
+  // In production, validate the URL
+  if (process.env.NODE_ENV === 'production') {
+    if (!apiUrl) {
+      console.error('❌ CRITICAL: NEXT_PUBLIC_API_URL is not set in production!');
+      console.error('Environment:', process.env.NODE_ENV);
+      console.error('Available env keys:', Object.keys(process.env));
+      throw new Error('API URL is not configured. Please contact system administrator.');
+    }
+    
+    // Check if URL still contains localhost in production
+    if (apiUrl.includes('localhost')) {
+      console.error('❌ CRITICAL: NEXT_PUBLIC_API_URL contains localhost in production!');
+      console.error('Current value:', apiUrl);
+      throw new Error('Production API URL is misconfigured (contains localhost)');
+    }
   }
   
   // Development fallback
@@ -46,23 +53,32 @@ function getWebSocketUrl(): string {
   
   // Derive from API URL
   const apiUrl = getApiUrl();
-  return `${apiUrl}/api/ws`;
+  
+  // Convert http/https to ws/wss
+  const wsProtocol = apiUrl.startsWith('https') ? 'wss' : 'ws';
+  const urlWithoutProtocol = apiUrl.replace(/^https?:\/\//, '');
+  
+  return `${wsProtocol}://${urlWithoutProtocol}/api/ws`;
 }
 
 /**
- * API Configuration Object
+ * API Configuration Object - Using getters for lazy evaluation
  * Use these throughout the application instead of hardcoding URLs
  */
 export const API_CONFIG = {
   /**
    * Base API URL (e.g., http://localhost:8080 or https://api.yourapp.com)
    */
-  BASE_URL: getApiUrl(),
+  get BASE_URL(): string {
+    return getApiUrl();
+  },
   
   /**
    * WebSocket URL for real-time communications
    */
-  WS_URL: getWebSocketUrl(),
+  get WS_URL(): string {
+    return getWebSocketUrl();
+  },
   
   /**
    * Request timeout in milliseconds
@@ -72,7 +88,9 @@ export const API_CONFIG = {
   /**
    * Environment flag
    */
-  IS_PRODUCTION: process.env.NODE_ENV === 'production',
+  get IS_PRODUCTION(): boolean {
+    return process.env.NODE_ENV === 'production';
+  },
   
   /**
    * API Endpoints
@@ -111,12 +129,12 @@ export function buildApiUrl(endpoint: string): string {
 }
 
 /**
- * Log configuration on app start (development only)
+ * Log configuration on app start
  */
-if (typeof window !== 'undefined' && !API_CONFIG.IS_PRODUCTION) {
+if (typeof window !== 'undefined') {
   console.log('🔧 API Configuration:');
   console.log('  Base URL:', API_CONFIG.BASE_URL);
   console.log('  WebSocket URL:', API_CONFIG.WS_URL);
   console.log('  Environment:', process.env.NODE_ENV);
+  console.log('  Raw NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
 }
-
