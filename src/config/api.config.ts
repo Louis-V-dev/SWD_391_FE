@@ -6,10 +6,16 @@
  */
 
 /**
+ * Production backend URL - used as fallback if environment variables fail
+ * This ensures the app works even if NEXT_PUBLIC_API_URL is not set
+ */
+const PRODUCTION_BACKEND_URL = 'https://greenloop-heb0bffxh4h4e0hy.canadacentral-01.azurewebsites.net';
+
+/**
  * Get the API base URL from environment variables
- * Falls back to localhost ONLY if not set (development fallback)
+ * Falls back to production URL (safer than localhost)
  * 
- * @throws {Error} In production if NEXT_PUBLIC_API_URL is not set or contains localhost
+ * @throws {Error} Never - always returns a valid URL
  */
 function getApiUrl(): string {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -17,23 +23,27 @@ function getApiUrl(): string {
   // In production, validate the URL
   if (process.env.NODE_ENV === 'production') {
     if (!apiUrl) {
-      console.error('❌ CRITICAL: NEXT_PUBLIC_API_URL is not set in production!');
+      console.error('❌ WARNING: NEXT_PUBLIC_API_URL is not set in production!');
+      console.error('Falling back to hardcoded production URL:', PRODUCTION_BACKEND_URL);
       console.error('Environment:', process.env.NODE_ENV);
-      console.error('Available env keys:', Object.keys(process.env));
-      throw new Error('API URL is not configured. Please contact system administrator.');
+      return PRODUCTION_BACKEND_URL;
     }
     
     // Check if URL still contains localhost in production
-    if (apiUrl.includes('localhost')) {
+    if (apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1') || apiUrl.includes(':8080')) {
       console.error('❌ CRITICAL: NEXT_PUBLIC_API_URL contains localhost in production!');
       console.error('Current value:', apiUrl);
-      throw new Error('Production API URL is misconfigured (contains localhost)');
+      console.error('Using production URL instead:', PRODUCTION_BACKEND_URL);
+      return PRODUCTION_BACKEND_URL;
     }
+    
+    return apiUrl;
   }
   
-  // Development fallback
+  // Development fallback - use localhost for local development
   if (!apiUrl) {
     console.warn('⚠️ NEXT_PUBLIC_API_URL not set, using localhost (development mode)');
+    console.warn('To connect to production backend in dev, set NEXT_PUBLIC_API_URL in .env.local');
     return 'http://localhost:8080';
   }
   
