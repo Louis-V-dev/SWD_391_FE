@@ -6,6 +6,7 @@ defaults:
 
 env:
   AZURE_WEBAPP_NAME: greenloop-fe
+  AZURE_RESOURCE_GROUP: GreenLoop
   NODE_VERSION: '20.x'
   ARTIFACT_NAME: next-app
   PACKAGE_FILE: release.zip
@@ -223,17 +224,11 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_5BDDA74B6D67459DAB70E4A798ECC0CA }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_14074202807C4F48928A475E333A61AB }}
       
-      - name: Get Resource Group
-        id: get-rg
-        run: |
-          RG=$(az webapp show --name ${{ env.AZURE_WEBAPP_NAME }} --query resourceGroup -o tsv)
-          echo "resource_group=$RG" >> $GITHUB_OUTPUT
-          echo "Found resource group: $RG"
-      
       - name: Stop Azure Web App (force clean deployment)
         run: |
           echo "Stopping Azure Web App to ensure clean deployment..."
-          az webapp stop --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ steps.get-rg.outputs.resource_group }} || true
+          echo "Using resource group: ${{ env.AZURE_RESOURCE_GROUP }}"
+          az webapp stop --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} || true
           echo "Web App stopped"
       
       - name: Deploy to Azure Web App
@@ -247,10 +242,10 @@ jobs:
       - name: Start Azure Web App
         run: |
           echo "Starting Azure Web App with new deployment..."
-          az webapp start --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ steps.get-rg.outputs.resource_group }} || true
+          az webapp start --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} || true
           sleep 5
           echo "Restarting to ensure fresh start..."
-          az webapp restart --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ steps.get-rg.outputs.resource_group }}
+          az webapp restart --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }}
           echo "Web App started successfully"
       
       - name: Deployment summary
