@@ -22,7 +22,9 @@ try {
   console.warn('WebSocket dependencies not installed. Run: npm install sockjs-client @stomp/stompjs');
 }
 
-const WEBSOCKET_URL = API_CONFIG.WS_URL;
+// Convert wss:// to https:// and ws:// to http:// for SockJS
+// SockJS expects HTTP URLs and handles WebSocket upgrade internally
+const WEBSOCKET_URL = API_CONFIG.WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
 
 export interface WebSocketMessage {
   messageId: string;

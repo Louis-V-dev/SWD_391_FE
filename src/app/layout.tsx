@@ -41,8 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Azure Communication Services SDK */}
-        <script src="https://cdn.jsdelivr.net/npm/@azure/communication-calling@1.23.1/dist/communication-calling.min.js"></script>
+        {/* Azure Communication Services SDK is bundled via Next.js from node_modules */}
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <GoogleOAuthProvider clientId={googleClientId}>
