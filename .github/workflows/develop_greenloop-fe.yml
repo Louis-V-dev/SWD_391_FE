@@ -159,11 +159,14 @@ jobs:
           if [ -d "public" ]; then 
             cp -R public deploy/public
           fi
-          echo '{"name":"greenloop-fe","version":"1.0.0","scripts":{"start":"node server.js"}}' > deploy/package.json
+          # Add timestamp to force Azure to recognize new deployment
+          TIMESTAMP=$(date +%s)
+          echo '{"name":"greenloop-fe","version":"1.0.'$TIMESTAMP'","scripts":{"start":"node server.js"}}' > deploy/package.json
+          echo "Build timestamp: $TIMESTAMP" > deploy/BUILD_INFO.txt
           cd deploy
           zip -r ../${{ env.PACKAGE_FILE }} . -q
           cd ..
-          echo "Deployment package created"
+          echo "Deployment package created with timestamp: $TIMESTAMP"
       
       - name: Clean up temporary files
         run: rm -rf deploy
@@ -205,12 +208,28 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_5BDDA74B6D67459DAB70E4A798ECC0CA }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_14074202807C4F48928A475E333A61AB }}
       
+      - name: Stop Azure Web App (force clean deployment)
+        run: |
+          echo "Stopping Azure Web App to ensure clean deployment..."
+          az webapp stop --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ secrets.AZURE_RESOURCE_GROUP || 'greenloop-rg' }} || true
+          echo "Web App stopped"
+      
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           package: ${{ env.PACKAGE_FILE }}
+          clean: true
+      
+      - name: Start Azure Web App
+        run: |
+          echo "Starting Azure Web App with new deployment..."
+          az webapp start --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ secrets.AZURE_RESOURCE_GROUP || 'greenloop-rg' }} || true
+          sleep 5
+          echo "Restarting to ensure fresh start..."
+          az webapp restart --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ secrets.AZURE_RESOURCE_GROUP || 'greenloop-rg' }}
+          echo "Web App started successfully"
       
       - name: Deployment summary
         run: |

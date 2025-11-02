@@ -56,3 +56,4 @@ if (hasErrors) {
 console.log('\n✅ All environment variables verified successfully!\n');
 console.log('These values will be BAKED into the Next.js build.\n');
 
+
