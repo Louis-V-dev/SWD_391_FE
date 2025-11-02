@@ -228,4 +228,4 @@ jobs:
           echo "🧹 If issues persist:"
           echo "- Clear browser cache (Ctrl+Shift+R or Cmd+Shift+R)"
           echo "- Check Azure Web App logs"
-          echo "- Restart Azure Web App
+          echo "- Restart Azure Web App"

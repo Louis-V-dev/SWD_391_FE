@@ -37,12 +37,17 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-.md
+# AI-generated documentation (for local reference only)
+DEPLOYMENT_ENV_TROUBLESHOOTING.md
+FIX_LOCALHOST_DEPLOYMENT_ISSUE.md
+SET_GITHUB_SECRETS.md
+FORCE_REBUILD.md
+CRITICAL_FIX_APPLIED.md
+diagnose-deployment.sh
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-.vercel
