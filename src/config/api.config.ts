@@ -40,11 +40,11 @@ function getApiUrl(): string {
     return apiUrl;
   }
   
-  // Development fallback - use localhost for local development
+  // Fallback to production URL if not set (safer than localhost)
   if (!apiUrl) {
-    console.warn('⚠️ NEXT_PUBLIC_API_URL not set, using localhost (development mode)');
-    console.warn('To connect to production backend in dev, set NEXT_PUBLIC_API_URL in .env.local');
-    return 'http://localhost:8080';
+    console.warn('⚠️ NEXT_PUBLIC_API_URL not set, using production backend');
+    console.warn('To use localhost for development, set NEXT_PUBLIC_API_URL=http://localhost:8080 in .env.local');
+    return PRODUCTION_BACKEND_URL;
   }
   
   return apiUrl;
