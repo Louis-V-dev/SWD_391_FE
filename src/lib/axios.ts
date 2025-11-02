@@ -1,13 +1,11 @@
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import Cookies from 'js-cookie';
+import { API_CONFIG } from '@/config/api.config';
 
-// API base URL - defaults to backend port 8080
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-// Create axios instance
+// Create axios instance with centralized configuration
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 30000, // Increased from 10s to 30s for email operations
+  baseURL: API_CONFIG.BASE_URL,
+  timeout: API_CONFIG.TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
   },

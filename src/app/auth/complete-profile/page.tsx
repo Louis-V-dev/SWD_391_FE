@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
+import { API_CONFIG } from '@/config/api.config';
 import Cookies from 'js-cookie';
 
 const completeProfileSchema = z.object({
@@ -59,9 +60,8 @@ function CompleteProfileContent() {
       setIsLoading(true);
       setError('');
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       const response = await fetch(
-        `${apiUrl}/api/auth/google/complete-profile/${userId}`,
+        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.GOOGLE_COMPLETE_PROFILE}/${userId}`,
         {
           method: 'POST',
           headers: {

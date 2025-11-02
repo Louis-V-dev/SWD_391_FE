@@ -4,13 +4,14 @@ import React, { createContext, useContext, useReducer, useEffect, useRef, useCal
 import ChatAPI from '@/api/chat';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
+import { API_CONFIG } from '@/config/api.config';
 import VideoCallModal from '@/components/VideoCall/VideoCallModal';
 import IncomingCallNotification from '@/components/VideoCall/IncomingCallNotification';
 import CallEndModal from '@/components/VideoCall/CallEndModal';
 import WaitingForReceiverModal from '@/components/VideoCall/WaitingForReceiverModal';
 
 const VideoCallContext = createContext<any>(null);
-const WEBSOCKET_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/api/ws';
+const WEBSOCKET_URL = API_CONFIG.WS_URL;
 const CALL_TIMEOUT_MS = 30000;
 
 const CALL_STATES = {

@@ -8,6 +8,7 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { API_CONFIG } from '@/config/api.config';
 
 // Type-safe imports with fallback for missing dependencies
 let Client: any;
@@ -21,7 +22,7 @@ try {
   console.warn('WebSocket dependencies not installed. Run: npm install sockjs-client @stomp/stompjs');
 }
 
-const WEBSOCKET_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/api/ws';
+const WEBSOCKET_URL = API_CONFIG.WS_URL;
 
 export interface WebSocketMessage {
   messageId: string;

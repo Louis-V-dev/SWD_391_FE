@@ -3,6 +3,7 @@
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { API_CONFIG } from '@/config/api.config';
 import { useState } from 'react';
 import Cookies from 'js-cookie';
 
@@ -17,8 +18,7 @@ export default function GoogleLoginButton() {
     setError('');
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const response = await fetch(`${apiUrl}/api/auth/google/login`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.GOOGLE_LOGIN}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

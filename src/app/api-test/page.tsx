@@ -4,11 +4,12 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { API_CONFIG } from '@/config/api.config';
 
 export default function ApiTestPage() {
   const [testResult, setTestResult] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const API_URL = API_CONFIG.BASE_URL;
 
   const testApiConnection = async () => {
     setIsLoading(true);
@@ -21,7 +22,7 @@ export default function ApiTestPage() {
         password: 'testpassword'
       };
       
-      const response = await fetch(`${API_URL}/api/auth/login`, {
+      const response = await fetch(`${API_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGIN}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,7 +51,7 @@ export default function ApiTestPage() {
     setTestResult('Testing health endpoint...');
     
     try {
-      const response = await fetch(`${API_URL}/actuator/health`);
+      const response = await fetch(`${API_URL}${API_CONFIG.ENDPOINTS.HEALTH}`);
       if (response.ok) {
         const data = await response.json();
         setTestResult(`✅ Health endpoint working! Status: ${data.status}`);
@@ -111,8 +112,9 @@ export default function ApiTestPage() {
               
               <div className="text-xs text-muted-foreground space-y-1">
                 <p><strong>Backend URL:</strong> {API_URL}</p>
-                <p><strong>Health Endpoint:</strong> /actuator/health</p>
-                <p><strong>Login Endpoint:</strong> /api/auth/login</p>
+                <p><strong>Health Endpoint:</strong> {API_CONFIG.ENDPOINTS.HEALTH}</p>
+                <p><strong>Login Endpoint:</strong> {API_CONFIG.ENDPOINTS.AUTH.LOGIN}</p>
+                <p><strong>WebSocket URL:</strong> {API_CONFIG.WS_URL}</p>
               </div>
             </CardContent>
           </Card>

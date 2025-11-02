@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { AuthAPI } from '@/api';
+import { API_CONFIG } from '@/config/api.config';
 import type { LoginRequest, RegisterRequest, LoginResponse, UserResponse } from '@/types';
 
 interface User {
@@ -71,7 +72,7 @@ export const useAuth = (): UseAuthReturn => {
       if (!token) return;
       
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}/api/points/${userId}/available`,
+        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.POINTS.AVAILABLE(userId)}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { AuthAPI, handleApiError } from '@/api';
+import { API_CONFIG } from '@/config/api.config';
 import type { 
   LoginRequest, 
   RegisterRequest, 
@@ -42,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!authToken) return;
       
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}/api/points/${userId}/available`,
+        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.POINTS.AVAILABLE(userId)}`,
         {
           headers: { Authorization: `Bearer ${authToken}` }
         }
