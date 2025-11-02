@@ -137,7 +137,7 @@ function CompleteProfileContent() {
         <Card>
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 h-16 w-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-              <User className="h-8 w-8 text-white" />
+              <UserCircle className="h-8 w-8 text-white" />
             </div>
             <CardTitle className="text-2xl font-bold">Complete Your Profile</CardTitle>
             <CardDescription>
