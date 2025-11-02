@@ -227,7 +227,7 @@ export default function LoginPage() {
                 <Recycle className="h-6 w-6 text-primary-foreground" />
               </motion.div>
               
-              <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
+              <CardTitle className="text-2xl font-bold">Welcome back!</CardTitle>
               <CardDescription>
                 Sign in to your Green Loop account to continue your sustainable fashion journey
               </CardDescription>
