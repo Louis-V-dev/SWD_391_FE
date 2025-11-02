@@ -66,6 +66,8 @@ Set these in your deployment platform:
 
 ## Testing Your Configuration
 
+### Development Mode
+
 1. Run the development server:
 ```bash
 npm run dev
@@ -76,28 +78,60 @@ npm run dev
 3. Check that:
    - ✅ Backend URL is correct
    - ✅ API connection works
-   - ✅ No localhost references in production
+
+### Production Deployment
+
+After deploying to Azure, verify the build was correct:
+
+1. Visit: `https://greenloop-fe.azurewebsites.net/env-check`
+
+2. Verify:
+   - ✅ API URL shows production backend (no localhost)
+   - ✅ All environment variables are correct
+   - ✅ No error banners appear
+
+### Quick Diagnosis (Before Deploying)
+
+Run the diagnostic script:
+```bash
+bash diagnose-deployment.sh
+```
+
+This checks:
+- No problematic .env files
+- GitHub Secrets are accessible
+- Build output doesn't contain localhost
 
 ---
 
 ## Troubleshooting
 
+### 🚨 Deployed App Still Calls `localhost:8080`
+
+This is the most common issue! Even with correct GitHub Secrets and Azure settings, the app calls localhost.
+
+**Root Cause:** Next.js bakes `NEXT_PUBLIC_*` variables into JavaScript at BUILD time. If the build doesn't have correct env vars, localhost gets hardcoded in the bundle.
+
+**Quick Fix:**
+1. Verify GitHub Secrets are set (not Azure Web App settings - those don't affect build)
+2. Commit and push to trigger new build:
+   ```bash
+   git commit --allow-empty -m "Force rebuild with correct env vars"
+   git push origin develop
+   ```
+3. Wait for deployment (2-3 minutes)
+4. Visit `/env-check` page to verify
+5. Hard refresh browser (Ctrl+Shift+R)
+
+**For detailed troubleshooting, see:** [`DEPLOYMENT_ENV_TROUBLESHOOTING.md`](./DEPLOYMENT_ENV_TROUBLESHOOTING.md)
+
 ### "API URL is not configured" error
 
-**Cause:** `NEXT_PUBLIC_API_URL` is not set in production
+**Cause:** `NEXT_PUBLIC_API_URL` is not set during build
 
 **Solution:**
-1. Set the environment variable in your deployment platform
-2. Redeploy the application
-
-### Still calling localhost in production
-
-**Cause:** Environment variable not set at build time
-
-**Solution:**
-1. Verify the environment variable is set correctly
-2. Trigger a new deployment (rebuild is required)
-3. Clear browser cache
+1. Set GitHub Secret (not just Azure config)
+2. Trigger new deployment (rebuild required)
 
 ### CORS errors
 
@@ -142,5 +176,21 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your-prod-preset
 
 ## Need Help?
 
-See the full [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed deployment instructions.
+### 📚 Documentation
+
+- **Deployment Issues:** [DEPLOYMENT_ENV_TROUBLESHOOTING.md](./DEPLOYMENT_ENV_TROUBLESHOOTING.md)
+- **Full Deployment Guide:** [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
+
+### 🔧 Diagnostic Tools
+
+1. **Pre-Deployment Check:**
+   ```bash
+   bash diagnose-deployment.sh
+   ```
+
+2. **Post-Deployment Check:**
+   Visit: `https://greenloop-fe.azurewebsites.net/env-check`
+
+3. **Build-Time Verification:**
+   Automatically runs via `npm run build` (checks env vars before building)
 
