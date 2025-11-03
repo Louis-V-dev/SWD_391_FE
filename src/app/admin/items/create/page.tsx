@@ -22,6 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
+import { Select } from '@/components/ui/Select';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { ItemsAPI, CategoriesAPI, BrandsAPI } from '@/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,6 +43,7 @@ const createItemSchema = z.object({
   resellPrice: z.number().min(0, 'Resell price is required'),
   weightGrams: z.number().min(1).optional(),
   acquisitionMethod: z.string().min(1, 'Acquisition method is required'),
+  itemStatus: z.string().optional(), // Item status
 });
 
 type CreateItemFormData = z.infer<typeof createItemSchema>;
@@ -73,7 +75,8 @@ export default function AdminCreateItemPage() {
     resolver: zodResolver(createItemSchema),
     defaultValues: {
       conditionScore: 5.0,
-      acquisitionMethod: AcquisitionMethod.COLLECTED
+      acquisitionMethod: AcquisitionMethod.COLLECTED,
+      itemStatus: ItemStatus.SUBMITTED
     }
   });
 
@@ -402,12 +405,10 @@ export default function AdminCreateItemPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Category *</label>
-                  <select
+                  <Select
+                    label="Category *"
+                    error={errors.categoryId?.message}
                     {...register('categoryId')}
-                    className={`w-full px-3 py-2 border rounded-md ${
-                      errors.categoryId ? 'border-red-500' : 'border-input'
-                    }`}
                   >
                     <option value="">Select category</option>
                     {categories.map((cat) => (
@@ -415,17 +416,13 @@ export default function AdminCreateItemPage() {
                         {cat.name}
                       </option>
                     ))}
-                  </select>
-                  {errors.categoryId && (
-                    <p className="text-red-500 text-sm mt-1">{errors.categoryId.message}</p>
-                  )}
+                  </Select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Brand</label>
-                  <select
+                  <Select
+                    label="Brand"
                     {...register('brandId')}
-                    className="w-full px-3 py-2 border rounded-md border-input"
                   >
                     <option value="">Select brand (optional)</option>
                     {brands.map((brand) => (
@@ -433,7 +430,7 @@ export default function AdminCreateItemPage() {
                         {brand.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
 
                 <div className="md:col-span-2">
@@ -548,19 +545,39 @@ export default function AdminCreateItemPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Acquisition Method *</label>
-                  <select
+                  <Select
+                    label="Acquisition Method *"
+                    error={errors.acquisitionMethod?.message}
                     {...register('acquisitionMethod')}
-                    className={`w-full px-3 py-2 border rounded-md ${
-                      errors.acquisitionMethod ? 'border-red-500' : 'border-input'
-                    }`}
                   >
                     <option value={AcquisitionMethod.COLLECTED}>Collected</option>
                     <option value={AcquisitionMethod.PURCHASED}>Purchased</option>
                     <option value={AcquisitionMethod.TRADED}>Traded</option>
                     <option value={AcquisitionMethod.DONATED}>Donated</option>
                     <option value={AcquisitionMethod.IMPORTED}>Imported</option>
-                  </select>
+                  </Select>
+                </div>
+
+                <div>
+                  <Select
+                    label="Item Status"
+                    helperText="Default: Submitted"
+                    {...register('itemStatus')}
+                  >
+                    <option value={ItemStatus.SUBMITTED}>Submitted</option>
+                    <option value={ItemStatus.PENDING_COLLECTION}>Pending Collection</option>
+                    <option value={ItemStatus.COLLECTED}>Collected</option>
+                    <option value={ItemStatus.VALUING}>Valuing</option>
+                    <option value={ItemStatus.VALUED}>Valued</option>
+                    <option value={ItemStatus.PROCESSING}>Processing</option>
+                    <option value={ItemStatus.READY_FOR_SALE}>Ready For Sale</option>
+                    <option value={ItemStatus.LISTED}>Listed</option>
+                    <option value={ItemStatus.SOLD}>Sold</option>
+                    <option value={ItemStatus.RENTED}>Rented</option>
+                    <option value={ItemStatus.DONATED}>Donated</option>
+                    <option value={ItemStatus.RECYCLED}>Recycled</option>
+                    <option value={ItemStatus.REJECTED}>Rejected</option>
+                  </Select>
                 </div>
               </div>
             </CardContent>

@@ -23,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { ItemsAPI } from '@/api';
 import type { ItemResponse } from '@/types';
@@ -58,6 +59,7 @@ export default function AdminItemDetailPage() {
         originalPrice: data.originalPrice,
         currentEstimatedValue: data.currentEstimatedValue,
         resellPrice: data.resellPrice,
+        itemStatus: data.itemStatus,
       });
     } catch (err: any) {
       setError(err.message || 'Failed to fetch item');
@@ -531,6 +533,28 @@ export default function AdminItemDetailPage() {
                     value={editFormData.conditionDescription || ''}
                     onChange={(e) => setEditFormData({ ...editFormData, conditionDescription: e.target.value })}
                   />
+                </div>
+
+                <div>
+                  <Select
+                    label="Item Status"
+                    value={editFormData.itemStatus || 'SUBMITTED'}
+                    onChange={(e) => setEditFormData({ ...editFormData, itemStatus: e.target.value })}
+                  >
+                    <option value="SUBMITTED">Submitted</option>
+                    <option value="PENDING_COLLECTION">Pending Collection</option>
+                    <option value="COLLECTED">Collected</option>
+                    <option value="VALUING">Valuing</option>
+                    <option value="VALUED">Valued</option>
+                    <option value="PROCESSING">Processing</option>
+                    <option value="READY_FOR_SALE">Ready For Sale</option>
+                    <option value="LISTED">Listed</option>
+                    <option value="SOLD">Sold</option>
+                    <option value="RENTED">Rented</option>
+                    <option value="DONATED">Donated</option>
+                    <option value="RECYCLED">Recycled</option>
+                    <option value="REJECTED">Rejected</option>
+                  </Select>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">

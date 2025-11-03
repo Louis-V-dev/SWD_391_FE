@@ -149,6 +149,28 @@ body {
   outline-offset: 2px;
 }
 
+/* Select dropdown styling for dark mode */
+select {
+  color-scheme: light dark;
+}
+
+.dark select {
+  color-scheme: dark;
+}
+
+/* Option elements in dark mode */
+.dark select option {
+  background-color: #1f2937; /* gray-800 */
+  color: #f9fafb; /* gray-50 */
+}
+
+/* Hover state for options (browser-dependent) */
+.dark select option:hover,
+.dark select option:checked {
+  background-color: #10b981; /* emerald-500 */
+  color: #ffffff;
+}
+
 /* Animation classes */
 .animate-fade-in {
   animation: fadeIn 0.3s ease-in-out;

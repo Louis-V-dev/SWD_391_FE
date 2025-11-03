@@ -184,9 +184,7 @@ export interface ItemResponse {
   // Physical properties
   size?: string;
   color?: string;
-  materialComposition?: { [key: string]: number };
   weightGrams?: number;
-  dimensions?: { [key: string]: number };
   
   // Condition and valuation
   conditionScore?: number;
@@ -218,7 +216,6 @@ export interface ItemResponse {
   
   // Media
   images?: string[];
-  videos?: string[];
   primaryImageUrl?: string;
   
   // Metadata
@@ -233,7 +230,6 @@ export interface ItemResponse {
   availableForListing?: boolean;
   inMarketplace?: boolean;
   hasImages?: boolean;
-  hasVideos?: boolean;
 }
 
 // Item Summary Interface (for lists)
@@ -281,12 +277,9 @@ export interface CreateItemRequest {
   originalPrice?: number;
   currentEstimatedValue?: number;
   resellPrice?: number;
-  materialComposition?: { [key: string]: number };
   weightGrams?: number;
-  dimensions?: { [key: string]: number };
   acquisitionMethod: AcquisitionMethod;
   images?: string[];
-  videos?: string[];
   tags?: string[];
   metadata?: { [key: string]: any };
   carbonFootprintKg?: number;
@@ -306,13 +299,10 @@ export interface UpdateItemRequest {
   originalPrice?: number;
   currentEstimatedValue?: number;
   resellPrice?: number;
-  materialComposition?: { [key: string]: number };
   weightGrams?: number;
-  dimensions?: { [key: string]: number };
   acquisitionMethod?: AcquisitionMethod;
   itemStatus?: ItemStatus;
   images?: string[];
-  videos?: string[];
   tags?: string[];
   metadata?: { [key: string]: any };
   carbonFootprintKg?: number;

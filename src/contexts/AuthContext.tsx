@@ -49,8 +49,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       );
       
-      const points = response.data.data || response.data || 0;
-      setUserPoints(points);
+      // Use nullish coalescing to properly handle 0 as a valid value
+      const points = response.data.data ?? response.data ?? 0;
+      setUserPoints(typeof points === 'number' ? points : 0);
       console.log('✅ Points loaded from DB:', points);
     } catch (err) {
       console.error('Failed to fetch points:', err);

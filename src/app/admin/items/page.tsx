@@ -20,6 +20,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Select } from '@/components/ui/Select';
 import AdminLayout from '@/components/layout/AdminLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import StatsCard from '@/components/ui/StatsCard';
@@ -215,23 +216,24 @@ export default function ItemsManagementPage() {
                   className="flex-1"
                 />
 
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => {
-                    setSelectedStatus(e.target.value);
-                    setCurrentPage(0);
-                  }}
-                  className="px-3 py-2 border border-input rounded-md bg-background"
-                >
-                  <option value="all">All Status</option>
-                  <option value={ItemStatus.LISTED}>Listed</option>
-                  <option value={ItemStatus.READY_FOR_SALE}>Ready for Sale</option>
-                  <option value={ItemStatus.SUBMITTED}>Submitted</option>
-                  <option value={ItemStatus.PENDING_COLLECTION}>Pending Collection</option>
-                  <option value={ItemStatus.COLLECTED}>Collected</option>
-                  <option value={ItemStatus.VALUED}>Valued</option>
-                  <option value={ItemStatus.REJECTED}>Rejected</option>
-                </select>
+                <div className="sm:w-56">
+                  <Select
+                    value={selectedStatus}
+                    onChange={(e) => {
+                      setSelectedStatus(e.target.value);
+                      setCurrentPage(0);
+                    }}
+                  >
+                    <option value="all">All Status</option>
+                    <option value={ItemStatus.LISTED}>Listed</option>
+                    <option value={ItemStatus.READY_FOR_SALE}>Ready for Sale</option>
+                    <option value={ItemStatus.SUBMITTED}>Submitted</option>
+                    <option value={ItemStatus.PENDING_COLLECTION}>Pending Collection</option>
+                    <option value={ItemStatus.COLLECTED}>Collected</option>
+                    <option value={ItemStatus.VALUED}>Valued</option>
+                    <option value={ItemStatus.REJECTED}>Rejected</option>
+                  </Select>
+                </div>
 
                 <Button variant="outline">
                   <Filter className="w-4 h-4 mr-2" />

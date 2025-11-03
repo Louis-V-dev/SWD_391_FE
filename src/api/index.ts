@@ -5,6 +5,8 @@ export { ItemsAPI, CategoriesAPI, BrandsAPI } from './items';
 
 // Export individual user functions (users.ts exports functions, not a class)
 export * from './users';
+export * from './points';
+export * from './payment';
 
 // Export base client and utilities
 export { apiClient, handleApiError } from '@/lib/axios';

@@ -11,7 +11,9 @@ import CallEndModal from '@/components/VideoCall/CallEndModal';
 import WaitingForReceiverModal from '@/components/VideoCall/WaitingForReceiverModal';
 
 const VideoCallContext = createContext<any>(null);
-const WEBSOCKET_URL = API_CONFIG.WS_URL;
+// Convert wss:// to https:// and ws:// to http:// for SockJS
+// SockJS expects HTTP URLs and handles WebSocket upgrade internally
+const WEBSOCKET_URL = API_CONFIG.WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
 const CALL_TIMEOUT_MS = 30000;
 
 const CALL_STATES = {

@@ -1,414 +1,288 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 import { 
-  User, 
-  Settings, 
-  Package, 
-  Heart, 
-  MapPin, 
+  User as UserIcon, 
   Mail, 
   Phone, 
   Calendar,
   Edit3,
-  Camera,
+  Save,
+  X,
   ShoppingBag,
-  Star,
-  TrendingUp
+  Award,
+  Loader2,
+  Camera
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useAuth } from '@/contexts/AuthContext';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+import * as userApi from '@/api/users';
+import type { User, UserUpdateRequest } from '@/types/domains/users';
 
-const tabs = [
-  { id: 'overview', name: 'Overview', icon: User },
-  { id: 'items', name: 'My Items', icon: Package },
-  { id: 'favorites', name: 'Favorites', icon: Heart },
-  { id: 'settings', name: 'Settings', icon: Settings },
-];
-
-const userStats = [
-  { label: 'Items Listed', value: '24', icon: Package },
-  { label: 'Items Sold', value: '18', icon: ShoppingBag },
-  { label: 'Rating', value: '4.8', icon: Star },
-  { label: 'Sustainability Score', value: '92%', icon: TrendingUp },
-];
-
-const recentItems = [
-  {
-    id: 1,
-    title: 'Vintage Denim Jacket',
-    price: '$45',
-    status: 'active',
-    views: 23,
-    image: '/api/placeholder/200/200'
-  },
-  {
-    id: 2,
-    title: 'Sustainable Cotton Dress',
-    price: '$32',
-    status: 'sold',
-    views: 45,
-    image: '/api/placeholder/200/200'
-  },
-  {
-    id: 3,
-    title: 'Eco-friendly Sneakers',
-    price: '$78',
-    status: 'active',
-    views: 12,
-    image: '/api/placeholder/200/200'
-  },
-];
-
-export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState('overview');
+export default function ProfileOverviewPage() {
+  const { user: authUser, userPoints } = useAuth();
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
-  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
+  // Full user data (from API, not just auth)
+  const [user, setUser] = useState<User | null>(null);
+  
+  // Edit form states
+  const [editForm, setEditForm] = useState<UserUpdateRequest>({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    bio: '',
+    dateOfBirth: '',
+    gender: undefined
+  });
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
+  // Load full user data
+  useEffect(() => {
+    if (authUser?.userId) {
+      loadUserData();
+    }
+  }, [authUser]);
+
+  // Initialize edit form when user data loads
+  useEffect(() => {
+    if (user) {
+      setEditForm({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        phone: user.phone || '',
+        bio: user.bio || '',
+        dateOfBirth: user.dateOfBirth || '',
+        gender: user.gender
+      });
+    }
+  }, [user]);
+
+  const loadUserData = async () => {
+    if (!authUser?.userId) return;
+    
+    setLoading(true);
+    try {
+      const userData = await userApi.getUserById(authUser.userId);
+      setUser(userData);
+    } catch (error) {
+      console.error('Failed to load user data:', error);
+      // Fallback to auth user
+      setUser(authUser as any);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring" as const,
-        stiffness: 100
-      }
+  const handleSaveProfile = async () => {
+    if (!user?.userId) return;
+
+    setSaving(true);
+    try {
+      const updatedUser = await userApi.updateUser(user.userId, editForm);
+      setUser(updatedUser);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+    } finally {
+      setSaving(false);
     }
   };
+
+  const handleCancelEdit = () => {
+    if (user) {
+      setEditForm({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        phone: user.phone || '',
+        bio: user.bio || '',
+        dateOfBirth: user.dateOfBirth || '',
+        gender: user.gender
+      });
+    }
+    setIsEditing(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      {/* Profile Header */}
-      <div className="bg-gradient-to-r from-primary to-primary-light">
-        <div className="container mx-auto px-4 py-16">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col md:flex-row items-center gap-8"
-          >
-            {/* Profile Picture */}
+    <div className="space-y-6">
+      {/* Profile Info Card */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Profile Information</CardTitle>
+            <CardDescription>Manage your personal information</CardDescription>
+          </div>
+          {!isEditing ? (
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+              <Edit3 className="w-4 h-4 mr-2" />
+              Edit
+            </Button>
+          ) : (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleCancelEdit} disabled={saving}>
+                <X className="w-4 h-4 mr-2" />
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleSaveProfile} disabled={saving}>
+                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                Save
+              </Button>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Profile Picture */}
+          <div className="flex items-center gap-6">
             <div className="relative">
-              <div className="w-32 h-32 rounded-full bg-white/20 backdrop-blur-sm border-4 border-white/30 flex items-center justify-center">
-                <User className="w-16 h-16 text-white" />
+              <div className="w-24 h-24 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center overflow-hidden">
+                {user?.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={user.firstName || 'Profile'} className="w-full h-full object-cover" />
+                ) : (
+                  <UserIcon className="w-12 h-12 text-green-600" />
+                )}
               </div>
               <Button
                 size="icon"
-                className="absolute bottom-0 right-0 rounded-full"
+                className="absolute bottom-0 right-0 rounded-full h-8 w-8"
                 variant="secondary"
+                title="Update avatar"
               >
                 <Camera className="w-4 h-4" />
               </Button>
             </div>
-
-            {/* Profile Info */}
-            <div className="text-center md:text-left text-white">
-              <h1 className="text-3xl font-bold mb-2">
-                {user?.firstName || 'John'} {user?.lastName || 'Doe'}
-              </h1>
-              <p className="text-white/80 mb-4">
-                Sustainable Fashion Enthusiast
-              </p>
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  <span>San Francisco, CA</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  <span>Joined March 2024</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="ml-auto">
-              <div className="grid grid-cols-2 gap-4">
-                {userStats.map((stat, index) => (
-                  <motion.div
-                    key={stat.label}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-3"
-                  >
-                    <stat.icon className="w-5 h-5 text-white mx-auto mb-1" />
-                    <div className="text-2xl font-bold text-white">{stat.value}</div>
-                    <div className="text-xs text-white/80">{stat.label}</div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="border-b bg-background/80 backdrop-blur-sm sticky top-16 z-10">
-        <div className="container mx-auto px-4">
-          <nav className="flex space-x-8">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 py-4 border-b-2 transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                <span>{tab.name}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="container mx-auto px-4 py-8">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          {/* Overview Tab */}
-          {activeTab === 'overview' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Profile Details */}
-              <motion.div variants={itemVariants} className="lg:col-span-2">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle>Profile Information</CardTitle>
-                      <CardDescription>
-                        Manage your personal information and preferences
-                      </CardDescription>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsEditing(!isEditing)}
-                    >
-                      <Edit3 className="w-4 h-4 mr-2" />
-                      {isEditing ? 'Save' : 'Edit'}
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-2">First Name</label>
-                        <Input
-                          defaultValue={user?.firstName || 'John'}
-                          disabled={!isEditing}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Last Name</label>
-                        <Input
-                          defaultValue={user?.lastName || 'Doe'}
-                          disabled={!isEditing}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Email</label>
-                      <Input
-                        defaultValue={user?.email || 'john.doe@example.com'}
-                        disabled={!isEditing}
-                        type="email"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Bio</label>
-                      <textarea
-                        className="w-full p-3 border border-border rounded-md"
-                        rows={4}
-                        disabled={!isEditing}
-                        defaultValue="Passionate about sustainable fashion and reducing environmental impact through conscious consumption."
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Quick Actions */}
-              <motion.div variants={itemVariants}>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Button className="w-full justify-start">
-                      <Package className="w-4 h-4 mr-2" />
-                      List New Item
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <ShoppingBag className="w-4 h-4 mr-2" />
-                      Browse Marketplace
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <TrendingUp className="w-4 h-4 mr-2" />
-                      View Analytics
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <Settings className="w-4 h-4 mr-2" />
-                      Account Settings
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </div>
-          )}
-
-          {/* Items Tab */}
-          {activeTab === 'items' && (
             <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">My Items</h2>
-                <Button>
-                  <Package className="w-4 h-4 mr-2" />
-                  Add New Item
-                </Button>
+              <h3 className="text-lg font-semibold">
+                {user?.firstName} {user?.lastName}
+              </h3>
+              <p className="text-sm text-muted-foreground">@{user?.username}</p>
+            </div>
+          </div>
+
+          {/* Form Fields */}
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">First Name</label>
+                <Input
+                  value={editForm.firstName}
+                  onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                  disabled={!isEditing}
+                />
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {recentItems.map((item, index) => (
-                  <motion.div
-                    key={item.id}
-                    variants={itemVariants}
-                    className="group"
-                  >
-                    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-                      <div className="aspect-square bg-muted relative">
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary-light/20 flex items-center justify-center">
-                          <Package className="w-16 h-16 text-primary/50" />
-                        </div>
-                        <div className="absolute top-2 right-2">
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            item.status === 'active' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {item.status}
-                          </span>
-                        </div>
-                      </div>
-                      <CardContent className="p-4">
-                        <h3 className="font-semibold mb-2">{item.title}</h3>
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-primary">{item.price}</span>
-                          <span className="text-sm text-muted-foreground">{item.views} views</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
+              <div>
+                <label className="text-sm font-medium">Last Name</label>
+                <Input
+                  value={editForm.lastName}
+                  onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                  disabled={!isEditing}
+                />
               </div>
             </div>
-          )}
-
-          {/* Favorites Tab */}
-          {activeTab === 'favorites' && (
             <div>
-              <h2 className="text-2xl font-bold mb-6">Favorite Items</h2>
-              <div className="text-center py-12">
-                <Heart className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No favorites yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Start exploring the marketplace to add items to your favorites
-                </p>
-                <Button>Browse Marketplace</Button>
+              <label className="text-sm font-medium">Email</label>
+              <Input value={user?.email || ''} disabled type="email" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Phone</label>
+              <Input
+                value={editForm.phone}
+                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                disabled={!isEditing}
+                type="tel"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Bio</label>
+              <textarea
+                className="w-full p-3 border border-border rounded-md bg-background disabled:opacity-50 disabled:cursor-not-allowed"
+                rows={4}
+                disabled={!isEditing}
+                value={editForm.bio}
+                onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+                placeholder="Tell us about yourself..."
+              />
+            </div>
+          </div>
+
+          {/* Contact Info Display */}
+          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground border-t pt-4">
+            {user?.email && (
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                <span>{user.email}</span>
+              </div>
+            )}
+            {user?.phone && (
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4" />
+                <span>{user.phone}</span>
+              </div>
+            )}
+            {user?.createdAt && (
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                <span>Joined {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Stats - Points & Orders */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Points Card */}
+        <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => router.push('/profile/points')}>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                  <Award className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Available Points</p>
+                  <h3 className="text-3xl font-bold text-green-600">{userPoints.toLocaleString()}</h3>
+                </div>
               </div>
             </div>
-          )}
+            <Button variant="outline" className="w-full">
+              View Points History
+            </Button>
+          </CardContent>
+        </Card>
 
-          {/* Settings Tab */}
-          {activeTab === 'settings' && (
-            <div className="max-w-2xl">
-              <h2 className="text-2xl font-bold mb-6">Account Settings</h2>
-              
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Notifications</CardTitle>
-                    <CardDescription>
-                      Manage how you receive notifications
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span>Email notifications</span>
-                      <input type="checkbox" defaultChecked className="rounded" />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Push notifications</span>
-                      <input type="checkbox" defaultChecked className="rounded" />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Marketing emails</span>
-                      <input type="checkbox" className="rounded" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Privacy</CardTitle>
-                    <CardDescription>
-                      Control your privacy settings
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span>Profile visibility</span>
-                      <select className="border border-border rounded px-3 py-1">
-                        <option>Public</option>
-                        <option>Private</option>
-                      </select>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Show activity status</span>
-                      <input type="checkbox" defaultChecked className="rounded" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Danger Zone</CardTitle>
-                    <CardDescription>
-                      Irreversible and destructive actions
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button variant="destructive">Delete Account</Button>
-                  </CardContent>
-                </Card>
+        {/* Orders Card */}
+        <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => router.push('/profile/orders')}>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                  <ShoppingBag className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Orders</p>
+                  <h3 className="text-3xl font-bold text-blue-600">{user?.ordersCount || 0}</h3>
+                </div>
               </div>
             </div>
-          )}
-        </motion.div>
+            <Button variant="outline" className="w-full">
+              View All Orders
+            </Button>
+          </CardContent>
+        </Card>
       </div>
-
-      <Footer />
     </div>
   );
-} 
+}

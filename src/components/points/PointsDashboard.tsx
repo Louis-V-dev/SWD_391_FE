@@ -1,17 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import { usePointSummary, useRecentTransactions } from '@/hooks/usePoints';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { Loader2, TrendingUp, TrendingDown, Clock, Award } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { BuyPointsModal } from './BuyPointsModal';
+import { Loader2, TrendingUp, TrendingDown, Clock, Award, Plus } from 'lucide-react';
 
 interface PointsDashboardProps {
   userId: string;
 }
 
 export function PointsDashboard({ userId }: PointsDashboardProps) {
-  const { summary, loading: summaryLoading } = usePointSummary(userId);
+  const { summary, loading: summaryLoading, refetch } = usePointSummary(userId);
   const { transactions, loading: transactionsLoading } = useRecentTransactions(userId, 5);
+  const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
 
   if (summaryLoading) {
     return (
@@ -27,6 +31,23 @@ export function PointsDashboard({ userId }: PointsDashboardProps) {
 
   return (
     <div className="space-y-6">
+      {/* Header with Buy Points Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Điểm Của Tôi</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Quản lý và sử dụng điểm tích lũy của bạn
+          </p>
+        </div>
+        <Button
+          onClick={() => setIsBuyModalOpen(true)}
+          className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Mua Điểm
+        </Button>
+      </div>
+
       {/* Points Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-6">
@@ -96,11 +117,11 @@ export function PointsDashboard({ userId }: PointsDashboardProps) {
         </Card>
       )}
 
-      {/* Recent Transactions */}
+      {/* Point History (from all sources) */}
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Recent Transactions</h3>
-          <a href="/profile/points" className="text-sm text-green-600 hover:text-green-700">
+          <h3 className="text-lg font-semibold dark:text-white">Point History</h3>
+          <a href="/profile/points" className="text-sm text-green-600 hover:text-green-700 dark:text-green-400">
             View All
           </a>
         </div>
@@ -110,35 +131,35 @@ export function PointsDashboard({ userId }: PointsDashboardProps) {
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
         ) : transactions.length === 0 ? (
-          <p className="text-center text-gray-500 py-8">No transactions yet</p>
+          <p className="text-center text-gray-500 dark:text-gray-400 py-8">No point history yet</p>
         ) : (
           <div className="space-y-3">
             {transactions.map((transaction) => (
               <div
                 key={transaction.transactionId}
-                className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900">{transaction.description}</p>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="font-medium text-gray-900 dark:text-white">{transaction.description}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {new Date(transaction.createdAt).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge
-                    variant={transaction.transactionType.startsWith('EARNED') ? 'success' : 'warning'}
+                    variant={transaction.transactionType.startsWith('EARNED') || transaction.transactionType === 'PURCHASED' ? 'success' : 'warning'}
                   >
                     {transaction.transactionType.replace('_', ' ')}
                   </Badge>
                   <span
                     className={`text-lg font-bold ${
-                      transaction.transactionType.startsWith('EARNED')
-                        ? 'text-green-600'
-                        : 'text-orange-600'
+                      transaction.transactionType.startsWith('EARNED') || transaction.transactionType === 'PURCHASED'
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-orange-600 dark:text-orange-400'
                     }`}
                   >
-                    {transaction.transactionType.startsWith('EARNED') ? '+' : '-'}
-                    {transaction.pointsAmount}
+                    {transaction.transactionType.startsWith('EARNED') || transaction.transactionType === 'PURCHASED' ? '+' : '-'}
+                    {transaction.pointsAmount.toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -146,6 +167,15 @@ export function PointsDashboard({ userId }: PointsDashboardProps) {
           </div>
         )}
       </Card>
+
+      {/* Buy Points Modal */}
+      <BuyPointsModal
+        isOpen={isBuyModalOpen}
+        onClose={() => {
+          setIsBuyModalOpen(false);
+          refetch(); // Refresh points after closing modal
+        }}
+      />
     </div>
   );
 }

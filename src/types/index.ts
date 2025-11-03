@@ -2,4 +2,6 @@
 export * from './domains/auth';
 export * from './domains/items';
 // export * from './domains/marketplace'; // Removed - marketplace listing feature removed
-export * from './domains/common'; 
+export * from './domains/common';
+export * from './domains/points';
+export * from './domains/payment'; 

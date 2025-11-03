@@ -257,6 +257,15 @@ export default function Header({
                             {/* Menu Items */}
 
                             <Link
+                              href="/profile"
+                              className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
+                              onClick={() => setUserMenuOpen(false)}
+                            >
+                              <User className="mr-3 h-4 w-4" />
+                              My Profile
+                            </Link>
+
+                            <Link
                               href="/profile/donations"
                               className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
                               onClick={() => setUserMenuOpen(false)}
@@ -283,6 +292,20 @@ export default function Header({
                               Settings
                             </Link>
 
+                            {/* Admin Workplace (only for admin) */}
+                            {user && hasAdminAccess(user) && (
+                              <>
+                                <div className="border-t border-border my-1"></div>
+                                <Link
+                                  href="/admin"
+                                  className="flex items-center px-4 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-colors font-medium"
+                                  onClick={() => setUserMenuOpen(false)}
+                                >
+                                  <Settings className="mr-3 h-4 w-4" />
+                                  Admin Workplace
+                                </Link>
+                              </>
+                            )}
 
                             <div className="border-t border-border my-1"></div>
 

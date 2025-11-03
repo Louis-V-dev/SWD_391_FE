@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useParams } from 'next/navigation';
-import SalesAPI, { Sale } from '@/api/sales';
+import { OrdersAPI, OrderResponse } from '@/api/orders';
 import { ShoppingBag, ArrowLeft, Calendar, Package, DollarSign } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -12,9 +12,9 @@ export default function OrderDetailsPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
-  const orderId = parseInt(params.id as string);
+  const orderId = params.id as string;
 
-  const [sale, setSale] = useState<Sale | null>(null);
+  const [order, setOrder] = useState<OrderResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,8 +30,8 @@ export default function OrderDetailsPage() {
   const loadOrder = async () => {
     try {
       setLoading(true);
-      const data = await SalesAPI.getSaleById(orderId);
-      setSale(data);
+      const data = await OrdersAPI.getOrderById(orderId);
+      setOrder(data);
     } catch (error) {
       console.error('Failed to load order:', error);
     } finally {
@@ -46,7 +46,7 @@ export default function OrderDetailsPage() {
     }).format(amount);
   };
 
-  if (loading || !sale) {
+  if (loading || !order) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
@@ -78,7 +78,7 @@ export default function OrderDetailsPage() {
               Order Details
             </h1>
             <p className="text-muted-foreground mt-2">
-              Order #{sale.saleId}
+              Order #{order.orderCode}
             </p>
           </div>
 
@@ -91,7 +91,7 @@ export default function OrderDetailsPage() {
                   Order Date
                 </p>
                 <p className="font-medium text-lg">
-                  {new Date(sale.saleDate).toLocaleDateString('vi-VN', {
+                  {new Date(order.createdAt).toLocaleDateString('vi-VN', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -103,7 +103,7 @@ export default function OrderDetailsPage() {
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Total Amount</p>
                 <p className="text-2xl font-bold text-primary">
-                  {formatCurrency(sale.totalAmount)}
+                  {formatCurrency(order.totalAmount)}
                 </p>
               </div>
             </div>
@@ -113,42 +113,69 @@ export default function OrderDetailsPage() {
           <div className="bg-card rounded-lg border p-6">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <Package className="w-5 h-5 text-primary" />
-              Items ({sale.details?.length || 0})
+              Items ({order.items?.length || 0})
             </h2>
 
-            {sale.details && sale.details.length > 0 ? (
+            {order.items && order.items.length > 0 ? (
               <div className="space-y-4">
-                {sale.details.map((detail) => (
-                  <div key={detail.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">Item #{detail.itemId}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Quantity: {detail.quantity} × {formatCurrency(detail.unitPrice)}
-                      </p>
-                      {detail.discount > 0 && (
-                        <p className="text-sm text-green-600">
-                          Discount: -{formatCurrency(detail.discount)}
-                        </p>
+                {order.items.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-4 flex-1">
+                      {item.itemImage && (
+                        <img src={item.itemImage} alt={item.itemName} className="w-16 h-16 object-cover rounded" />
                       )}
-                      {detail.tax > 0 && (
+                      <div className="flex-1">
+                        <p className="font-medium text-foreground">{item.itemName}</p>
                         <p className="text-sm text-muted-foreground">
-                          Tax: +{formatCurrency(detail.tax)}
+                          Quantity: {item.quantity} × {formatCurrency(item.unitPrice)}
                         </p>
-                      )}
+                        {item.discount > 0 && (
+                          <p className="text-sm text-green-600">
+                            Discount: -{formatCurrency(item.discount)}
+                          </p>
+                        )}
+                        {item.tax > 0 && (
+                          <p className="text-sm text-muted-foreground">
+                            Tax: +{formatCurrency(item.tax)}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-bold text-foreground">
-                        {formatCurrency(detail.subtotal)}
+                        {formatCurrency(item.subtotal)}
                       </p>
                     </div>
                   </div>
                 ))}
 
                 {/* Summary */}
-                <div className="border-t pt-4 mt-4">
-                  <div className="flex justify-between text-xl font-bold">
+                <div className="border-t pt-4 mt-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal:</span>
+                    <span className="font-medium">{formatCurrency(order.subtotal)}</span>
+                  </div>
+                  {order.discount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Discount:</span>
+                      <span className="font-medium text-green-600">-{formatCurrency(order.discount)}</span>
+                    </div>
+                  )}
+                  {order.shippingCost > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Shipping:</span>
+                      <span className="font-medium">+{formatCurrency(order.shippingCost)}</span>
+                    </div>
+                  )}
+                  {order.pointsUsed > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Points Used:</span>
+                      <span className="font-medium text-primary">-{order.pointsUsed} points</span>
+                    </div>
+                  )}
+                  <div className="border-t pt-2 flex justify-between text-xl font-bold">
                     <span>Total:</span>
-                    <span className="text-primary">{formatCurrency(sale.totalAmount)}</span>
+                    <span className="text-primary">{formatCurrency(order.totalAmount)}</span>
                   </div>
                 </div>
               </div>
