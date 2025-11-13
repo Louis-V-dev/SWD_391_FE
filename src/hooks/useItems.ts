@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ItemsAPI, CategoriesAPI, BrandsAPI } from '@/api';
+import { ItemsAPI, CategoriesAPI, BrandsAPI, handleApiError } from '@/api';
 import type { 
   Item, 
   CreateItemRequest, 
@@ -8,6 +8,7 @@ import type {
   Brand, 
   PaginatedResponse 
 } from '@/types';
+import { formatApiError } from '@/utils/errorMessages';
 
 interface UseItemsReturn {
   // State
@@ -51,9 +52,14 @@ export const useItems = (): UseItemsReturn => {
       setItems(response.data);
       return response;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch items';
-      setError(errorMessage);
-      throw err;
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'items',
+        'Failed to fetch items.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -68,9 +74,14 @@ export const useItems = (): UseItemsReturn => {
       setItem(response);
       return response;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch item';
-      setError(errorMessage);
-      throw err;
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'items',
+        'Failed to fetch item details.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -85,9 +96,14 @@ export const useItems = (): UseItemsReturn => {
       setItems(prev => [...prev, response]);
       return response;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create item';
-      setError(errorMessage);
-      throw err;
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'items',
+        'Failed to create item.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -105,9 +121,14 @@ export const useItems = (): UseItemsReturn => {
       }
       return response;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update item';
-      setError(errorMessage);
-      throw err;
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'items',
+        'Failed to update item.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -124,9 +145,14 @@ export const useItems = (): UseItemsReturn => {
         setItem(null);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete item';
-      setError(errorMessage);
-      throw err;
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'items',
+        'Failed to delete item.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -141,9 +167,14 @@ export const useItems = (): UseItemsReturn => {
       setItems(response.data);
       return response;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch owner items';
-      setError(errorMessage);
-      throw err;
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'items',
+        'Failed to fetch owner items.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -157,9 +188,14 @@ export const useItems = (): UseItemsReturn => {
       const response = await ItemsAPI.uploadImages(itemId, files);
       return response;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to upload images';
-      setError(errorMessage);
-      throw err;
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'items',
+        'Failed to upload images.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -174,9 +210,14 @@ export const useItems = (): UseItemsReturn => {
       setCategories(response);
       return response;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch categories';
-      setError(errorMessage);
-      throw err;
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'items',
+        'Failed to fetch categories.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -191,9 +232,14 @@ export const useItems = (): UseItemsReturn => {
       setBrands(response);
       return response;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch brands';
-      setError(errorMessage);
-      throw err;
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'items',
+        'Failed to fetch brands.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }

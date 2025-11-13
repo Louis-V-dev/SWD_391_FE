@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useRouter } from 'next/navigation';
 import { 
@@ -30,6 +30,8 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { ItemsAPI } from '@/api/items';
+import ChatAPI from '@/api/chat';
+import { useAuth } from '@/hooks/useAuth';
 
 // Mock data for fallback
 const mockItemData = {
@@ -79,6 +81,8 @@ export default function ItemDetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [creatingConversation, setCreatingConversation] = useState(false);
+  const { user, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     loadItem();
@@ -97,6 +101,56 @@ export default function ItemDetailPage() {
       setLoading(false);
     }
   };
+
+  const sellerId = useMemo(() => {
+    if (!item) return null;
+    return (
+      item.currentOwnerId ||
+      item.ownerId ||
+      item.originalOwnerId ||
+      item.owner?.userId ||
+      null
+    );
+  }, [item]);
+
+  const handleChatWithSeller = async () => {
+    if (!item) return;
+
+    if (!sellerId) {
+      console.warn('Seller information is unavailable for this item.');
+      return;
+    }
+
+    if (creatingConversation || authLoading) {
+      return;
+    }
+
+    if (!user) {
+      const fallbackId = item.itemId || params.id;
+      const redirectPath = `/item/${fallbackId}`;
+      router.push(`/auth/login?redirect=${encodeURIComponent(redirectPath)}`);
+      return;
+    }
+
+    if (user.userId === sellerId) {
+      console.info('Listing owner cannot initiate chat with themselves.');
+      return;
+    }
+
+    try {
+      setCreatingConversation(true);
+      const { conversation } = await ChatAPI.createConversation(sellerId, false);
+      router.push(`/chat?conversationId=${conversation.conversationId}`);
+    } catch (error) {
+      console.error('Failed to start chat with seller:', error);
+      window.alert('Không thể bắt đầu cuộc trò chuyện. Vui lòng thử lại sau.');
+    } finally {
+      setCreatingConversation(false);
+    }
+  };
+
+  const isSellerSelf = !!(user && sellerId && user.userId === sellerId);
+  const isChatDisabled = !sellerId || creatingConversation || authLoading || isSellerSelf;
 
   const addToCart = () => {
     if (!item) return;
@@ -438,10 +492,30 @@ export default function ItemDetailPage() {
                     </>
                   )}
                 </Button>
-                <Button variant="outline" size="lg" className="w-full">
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Nhắn tin người bán
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full"
+                  onClick={handleChatWithSeller}
+                  disabled={isChatDisabled}
+                >
+                  {creatingConversation ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Đang mở trò chuyện...
+                    </>
+                  ) : (
+                    <>
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Nhắn tin người bán
+                    </>
+                  )}
                 </Button>
+                {isSellerSelf && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Bạn là chủ sở hữu hiện tại của sản phẩm này.
+                  </p>
+                )}
               </div>
 
               {/* Seller Info */}

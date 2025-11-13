@@ -5,7 +5,6 @@ import type {
   PointEarningRequest, 
   PointRedemptionRequest, 
   PointStatistics,
-  PointEarningRule,
   PagedTransactions,
   TransactionType
 } from '@/types/domains/points';
@@ -93,29 +92,6 @@ export const getTotalSpentPoints = async (userId: string): Promise<number> => {
   return response.data.data;
 };
 
-export const getExpiringPoints = async (userId: string, days: number = 30): Promise<number> => {
-  const response = await axiosInstance.get(`/api/points/${userId}/expiring`, {
-    params: { days }
-  });
-  return response.data.data;
-};
-
-// Point Expiration
-export const expirePoints = async (): Promise<void> => {
-  await axiosInstance.post('/api/points/expire');
-};
-
-export const getExpiringSoonPoints = async (userId: string, days: number = 7): Promise<PointTransaction[]> => {
-  const response = await axiosInstance.get(`/api/points/${userId}/expiring-soon`, {
-    params: { days }
-  });
-  return response.data.data;
-};
-
-export const notifyExpiringPoints = async (userId: string): Promise<void> => {
-  await axiosInstance.post(`/api/points/${userId}/notify-expiring`);
-};
-
 // Point Statistics
 export const getPointStatistics = async (userId: string): Promise<PointStatistics> => {
   const response = await axiosInstance.get(`/api/points/${userId}/statistics`);
@@ -156,20 +132,6 @@ export const awardReferralPoints = async (userId: string, referredUserId: string
   return response.data.data;
 };
 
-export const awardSignupBonus = async (userId: string): Promise<PointTransaction> => {
-  const response = await axiosInstance.post('/api/points/award/signup', null, {
-    params: { userId }
-  });
-  return response.data.data;
-};
-
-export const awardDailyLoginPoints = async (userId: string): Promise<PointTransaction> => {
-  const response = await axiosInstance.post('/api/points/award/daily-login', null, {
-    params: { userId }
-  });
-  return response.data.data;
-};
-
 // Point Validation
 export const hasEnoughPoints = async (userId: string, requiredPoints: number): Promise<boolean> => {
   const response = await axiosInstance.get(`/api/points/${userId}/has-enough`, {
@@ -184,49 +146,6 @@ export const canRedeemPoints = async (userId: string, points: number): Promise<b
   });
   return response.data.data;
 };
-
-// Point Earning Rules
-export const getAllRules = async (): Promise<PointEarningRule[]> => {
-  const response = await axiosInstance.get('/api/point-rules');
-  return response.data.data;
-};
-
-export const getActiveRule = async (): Promise<PointEarningRule> => {
-  const response = await axiosInstance.get('/api/point-rules/active');
-  return response.data.data;
-};
-
-export const getRuleById = async (ruleId: string): Promise<PointEarningRule> => {
-  const response = await axiosInstance.get(`/api/point-rules/${ruleId}`);
-  return response.data.data;
-};
-
-export const createRule = async (rule: Omit<PointEarningRule, 'ruleId' | 'createdAt' | 'updatedAt' | 'isEventActive'>): Promise<PointEarningRule> => {
-  const response = await axiosInstance.post('/api/point-rules', rule);
-  return response.data.data;
-};
-
-export const updateRule = async (ruleId: string, rule: Partial<PointEarningRule>): Promise<PointEarningRule> => {
-  const response = await axiosInstance.put(`/api/point-rules/${ruleId}`, rule);
-  return response.data.data;
-};
-
-export const deleteRule = async (ruleId: string): Promise<void> => {
-  await axiosInstance.delete(`/api/point-rules/${ruleId}`);
-};
-
-export const activateRule = async (ruleId: string): Promise<void> => {
-  await axiosInstance.patch(`/api/point-rules/${ruleId}/activate`);
-};
-
-
-
-
-
-
-
-
-
 
 
 

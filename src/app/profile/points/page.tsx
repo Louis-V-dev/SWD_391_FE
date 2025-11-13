@@ -1,27 +1,44 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { PointsDashboard } from '@/components/points/PointsDashboard';
-import { BuyPointsModal } from '@/components/points/BuyPointsModal';
-import { useExpiringPoints } from '@/hooks/usePoints';
 import { usePaymentHistory } from '@/hooks/usePayment';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { Clock, AlertTriangle, ChevronLeft, ChevronRight, Loader2, XCircle } from 'lucide-react';
+import { Clock, Loader2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import * as paymentApi from '@/api/payment';
+import { useUser } from '@/hooks/useUsers';
 
 export default function UserPointsPage() {
   const { user, refreshPoints } = useAuth();
-  const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
   const [showCancelNotification, setShowCancelNotification] = useState(false);
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
-  const { history, loading, fetchHistory } = usePaymentHistory(user?.userId);
-  const { expiringPoints, notify } = useExpiringPoints(user?.userId, 7);
+  const searchParams = useSearchParams();
+
+  const targetUserId = useMemo(() => {
+    const requestedId = searchParams?.get('userId');
+    const role = user?.role?.toUpperCase?.() ?? '';
+    const canViewOthers = role === 'ADMIN' || role === 'STAFF' || role === 'SUPER_ADMIN';
+    if (requestedId && canViewOthers && requestedId !== user?.userId) {
+      return requestedId;
+    }
+    return user?.userId ?? null;
+  }, [searchParams, user?.role, user?.userId]);
+
+  const isViewingSelf = targetUserId === user?.userId;
+
+  const { history, loading, fetchHistory } = usePaymentHistory(targetUserId ?? undefined);
+  const { user: inspectedUser } = useUser(!isViewingSelf ? targetUserId ?? undefined : undefined);
 
   // Check for payment return (success or failure)
   useEffect(() => {
+    if (!user || !isViewingSelf) {
+      return;
+    }
+
     const handlePaymentReturn = async () => {
       // Check URL parameters for MoMo callback
       const urlParams = new URLSearchParams(window.location.search);
@@ -74,14 +91,14 @@ export default function UserPointsPage() {
     };
 
     handlePaymentReturn();
-  }, [fetchHistory, refreshPoints]);
+  }, [fetchHistory, refreshPoints, isViewingSelf, user]);
   
   // Fetch payment history on mount
   useEffect(() => {
-    if (fetchHistory) {
+    if (fetchHistory && targetUserId) {
       fetchHistory();
     }
-  }, [fetchHistory]);
+  }, [fetchHistory, targetUserId]);
 
   if (!user) {
     return (
@@ -145,41 +162,28 @@ export default function UserPointsPage() {
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Points</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">Manage and track your sustainability points</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          {isViewingSelf ? 'My Points' : 'User Points'}
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">
+          {isViewingSelf
+            ? 'Manage and track your sustainability points'
+            : `Monitoring point activity for ${inspectedUser?.fullName || inspectedUser?.username || targetUserId}`}
+        </p>
       </div>
 
-      {/* Expiring Points Alert */}
-      {expiringPoints.length > 0 && (
-        <Card className="p-4 mb-6 bg-orange-50 border-orange-200">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-semibold text-orange-900">Points Expiring Soon!</h3>
-              <p className="text-sm text-orange-700 mt-1">
-                You have {expiringPoints.reduce((sum, t) => sum + t.pointsAmount, 0)} points expiring in the next 7 days.
-              </p>
-            </div>
-            <Button
-              size="sm"
-              onClick={() => notify()}
-              variant="outline"
-              className="border-orange-300 text-orange-700 hover:bg-orange-100"
-            >
-              Remind Me
-            </Button>
-          </div>
-        </Card>
-      )}
-
       {/* Points Dashboard */}
-      <PointsDashboard userId={user.userId} />
+      {targetUserId && (
+        <PointsDashboard userId={targetUserId} canPurchase={isViewingSelf} />
+      )}
 
       {/* Payment History */}
       <Card className="mt-8">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Payment History</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">All your point purchases via MoMo</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            {isViewingSelf ? 'All your point purchases via MoMo' : 'MoMo point purchases for this user'}
+          </p>
         </div>
 
         <div className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -191,12 +195,14 @@ export default function UserPointsPage() {
             <div className="text-center py-12">
               <Clock className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
               <p className="text-gray-500 dark:text-gray-400">No payment history yet</p>
-              <Button
-                onClick={() => setIsBuyModalOpen(true)}
-                className="mt-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
-              >
-                Buy Your First Points
-              </Button>
+              {isViewingSelf && (
+                <Button
+                  onClick={() => document.querySelector<HTMLButtonElement>('[data-points-dashboard-buy]')?.click()}
+                  className="mt-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
+                >
+                  Buy Your First Points
+                </Button>
+              )}
             </div>
           ) : (
             <>
@@ -253,16 +259,6 @@ export default function UserPointsPage() {
         </div>
       </Card>
 
-      {/* Buy Points Modal */}
-      <BuyPointsModal
-        isOpen={isBuyModalOpen}
-        onClose={() => {
-          setIsBuyModalOpen(false);
-          if (fetchHistory) {
-            fetchHistory();
-          }
-        }}
-      />
     </div>
   );
 }

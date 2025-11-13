@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { OrdersAPI, OrderCreateRequest } from '@/api/orders';
+import { handleApiError } from '@/api';
+import { formatApiError } from '@/utils/errorMessages';
 import { ShoppingCart, MapPin, CreditCard, AlertCircle, Edit2, Check, X, Loader2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -148,9 +150,15 @@ export default function CheckoutPage() {
         alert(`Đặt hàng thành công! ${orders.length} đơn hàng đã được tạo.`);
         router.push(`/profile/orders`);
       }, 500);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to create order:', error);
-      alert(error.message || 'Không thể hoàn tất đơn hàng. Vui lòng thử lại.');
+      const backendMessage = handleApiError(error);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'checkout',
+        'Không thể hoàn tất đơn hàng. Vui lòng thử lại.'
+      );
+      alert(friendlyMessage);
     } finally {
       setLoading(false);
     }

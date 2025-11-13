@@ -25,7 +25,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import AdminLayout from '@/components/layout/AdminLayout';
-import { ItemsAPI } from '@/api';
+import { ItemsAPI, handleApiError } from '@/api';
+import { formatApiError } from '@/utils/errorMessages';
 import type { ItemResponse } from '@/types';
 
 export default function AdminItemDetailPage() {
@@ -61,8 +62,14 @@ export default function AdminItemDetailPage() {
         resellPrice: data.resellPrice,
         itemStatus: data.itemStatus,
       });
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch item');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/items',
+        'Failed to load item details. Please try again.'
+      );
+      setError(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -76,8 +83,14 @@ export default function AdminItemDetailPage() {
       await ItemsAPI.updateItem(item.itemId, editFormData);
       await fetchItem();
       setShowEditModal(false);
-    } catch (err: any) {
-      setError(err.message || 'Failed to update item');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/items',
+        'Failed to update the item. Please review the details and try again.'
+      );
+      setError(friendlyMessage);
     } finally {
       setSaving(false);
     }

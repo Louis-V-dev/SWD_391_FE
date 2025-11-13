@@ -89,8 +89,8 @@ export function UserProfileCard({ user, showStats = true }: UserProfileCardProps
           </div>
           <div className="text-center">
             <ShoppingBag className="h-5 w-5 text-gray-400 mx-auto mb-1" />
-            <p className="text-sm font-medium text-gray-900">{user.listingsCount || 0}</p>
-            <p className="text-xs text-gray-600">Listings</p>
+            <p className="text-sm font-medium text-gray-900">{user.itemsCount || 0}</p>
+            <p className="text-xs text-gray-600">Items</p>
           </div>
           <div className="text-center">
             <ShoppingBag className="h-5 w-5 text-gray-400 mx-auto mb-1" />

@@ -4,15 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Package, 
-  ShoppingBag, 
-  BarChart3, 
-  Settings, 
-  Menu, 
-  X, 
+import {
+  LayoutDashboard,
+  Users,
+  Package,
+  BarChart3,
+  Settings,
+  Menu,
+  X,
   LogOut,
   Bell,
   Search,
@@ -20,8 +19,7 @@ import {
   AlertCircle,
   Building2,
   FolderTree,
-  Gift,
-  ShoppingCart
+  Receipt,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -39,10 +37,9 @@ const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Items', href: '/admin/items', icon: Package },
-  { name: 'Donations', href: '/admin/donations', icon: Gift },
+  { name: 'Orders', href: '/admin/orders', icon: Receipt },
   { name: 'Brands', href: '/admin/brands', icon: Building2 },
   { name: 'Categories', href: '/admin/categories', icon: FolderTree },
-  { name: 'Listings', href: '/admin/listings', icon: ShoppingBag },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];

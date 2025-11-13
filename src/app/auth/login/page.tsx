@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
 import { handleApiError, AuthAPI } from '@/api';
+import { formatApiError } from '@/utils/errorMessages';
 import GoogleLoginButton from '@/components/auth/GoogleLoginButton';
 
 const loginSchema = z.object({
@@ -113,20 +114,23 @@ export default function LoginPage() {
       console.error('❌ LoginPage: Login failed:', err);
       
       // Extract error message safely
-      let errorMessage = 'Login failed. Please try again.';
-      
+      const fallbackMessage = 'Login failed. Please try again.';
+      let backendMessage = fallbackMessage;
+
       try {
-        errorMessage = handleApiError(err);
+        backendMessage = handleApiError(err);
       } catch (handleError) {
         console.error('❌ LoginPage: Error handling error:', handleError);
       }
-      
-      setError(errorMessage);
+
+      const friendlyMessage = formatApiError(backendMessage, 'auth/login', fallbackMessage);
+      setError(friendlyMessage);
       
       // Check if error is about unverified email
-      if (errorMessage.toLowerCase().includes('verify your email') || 
-          errorMessage.toLowerCase().includes('email verification') ||
-          errorMessage.toLowerCase().includes('not verified')) {
+      const normalizedBackendMessage = backendMessage?.toLowerCase?.() ?? '';
+      if (normalizedBackendMessage.includes('verify your email') || 
+          normalizedBackendMessage.includes('email verification') ||
+          normalizedBackendMessage.includes('not verified')) {
         // Backend can handle both email and username
         setResendEmail(data.emailOrUsername);
         setShowResendModal(true);

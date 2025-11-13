@@ -6,13 +6,14 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BuyPointsModal } from './BuyPointsModal';
-import { Loader2, TrendingUp, TrendingDown, Clock, Award, Plus } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, Award, Plus } from 'lucide-react';
 
 interface PointsDashboardProps {
   userId: string;
+  canPurchase?: boolean;
 }
 
-export function PointsDashboard({ userId }: PointsDashboardProps) {
+export function PointsDashboard({ userId, canPurchase = true }: PointsDashboardProps) {
   const { summary, loading: summaryLoading, refetch } = usePointSummary(userId);
   const { transactions, loading: transactionsLoading } = useRecentTransactions(userId, 5);
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
@@ -39,17 +40,20 @@ export function PointsDashboard({ userId }: PointsDashboardProps) {
             Quản lý và sử dụng điểm tích lũy của bạn
           </p>
         </div>
-        <Button
-          onClick={() => setIsBuyModalOpen(true)}
-          className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Mua Điểm
-        </Button>
+        {canPurchase && (
+          <Button
+            onClick={() => setIsBuyModalOpen(true)}
+            data-points-dashboard-buy
+            className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Mua Điểm
+          </Button>
+        )}
       </div>
 
       {/* Points Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -83,21 +87,6 @@ export function PointsDashboard({ userId }: PointsDashboardProps) {
               </h3>
             </div>
             <TrendingDown className="h-10 w-10 text-orange-600 opacity-20" />
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Expiring Soon</p>
-              <h3 className="text-2xl font-bold text-red-600 mt-1">
-                {summary.expiringPoints.toLocaleString()}
-              </h3>
-              <p className="text-xs text-gray-500 mt-1">
-                in {summary.expiringInDays} days
-              </p>
-            </div>
-            <Clock className="h-10 w-10 text-red-600 opacity-20" />
           </div>
         </Card>
       </div>
@@ -169,13 +158,15 @@ export function PointsDashboard({ userId }: PointsDashboardProps) {
       </Card>
 
       {/* Buy Points Modal */}
-      <BuyPointsModal
-        isOpen={isBuyModalOpen}
-        onClose={() => {
-          setIsBuyModalOpen(false);
-          refetch(); // Refresh points after closing modal
-        }}
-      />
+      {canPurchase && (
+        <BuyPointsModal
+          isOpen={isBuyModalOpen}
+          onClose={() => {
+            setIsBuyModalOpen(false);
+            refetch(); // Refresh points after closing modal
+          }}
+        />
+      )}
     </div>
   );
 }

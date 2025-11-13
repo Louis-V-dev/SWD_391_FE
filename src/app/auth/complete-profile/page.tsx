@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { API_CONFIG } from '@/config/api.config';
 import Cookies from 'js-cookie';
+import { formatApiError } from '@/utils/errorMessages';
 
 const completeProfileSchema = z.object({
   username: z.string()
@@ -26,7 +27,9 @@ const completeProfileSchema = z.object({
     .min(1, 'Last name is required')
     .max(50, 'Last name must not exceed 50 characters'),
   phone: z.string()
-    .regex(/^[+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/, 'Invalid phone number format'),
+    .trim()
+    .min(1, 'Phone number is required')
+    .regex(/^0\d{9}$/, 'Phone number must be 10 digits and start with 0'),
   dateOfBirth: z.string().optional(),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
   bio: z.string().max(500, 'Bio must not exceed 500 characters').optional(),
@@ -36,7 +39,7 @@ type CompleteProfileFormData = z.infer<typeof completeProfileSchema>;
 
 function CompleteProfileContent() {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -52,13 +55,19 @@ function CompleteProfileContent() {
 
   const onSubmit = async (data: CompleteProfileFormData) => {
     if (!userId) {
-      setError('User ID not found. Please try logging in again.');
+      setFormError('User ID not found. Please try logging in again.');
       return;
     }
 
     try {
       setIsLoading(true);
-      setError('');
+      setFormError('');
+
+      const fallbackMessage = 'Profile completion failed. Please review your details and try again.';
+      const payload: CompleteProfileFormData = {
+        ...data,
+        phone: data.phone.trim(),
+      };
 
       const response = await fetch(
         `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.GOOGLE_COMPLETE_PROFILE}/${userId}`,
@@ -67,11 +76,39 @@ function CompleteProfileContent() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(data),
+          body: JSON.stringify(payload),
         }
       );
 
-      const result = await response.json();
+      let result: any = {};
+      try {
+        result = await response.json();
+      } catch {
+        result = {};
+      }
+
+      if (!response.ok) {
+        let backendMessage =
+          result?.message || (typeof result === 'string' ? result : '') || '';
+
+        if (response.status === 400) {
+          if (result?.errors?.phone) {
+            backendMessage = Array.isArray(result.errors.phone)
+              ? result.errors.phone.join(', ')
+              : String(result.errors.phone);
+          } else if (backendMessage?.includes('Could not commit JPA transaction')) {
+            backendMessage = 'Phone number must be 10 digits and start with 0.';
+          }
+        }
+
+        const friendlyMessage = formatApiError(
+          backendMessage,
+          'auth/complete-profile',
+          fallbackMessage
+        );
+        setFormError(friendlyMessage);
+        return;
+      }
 
       if (result.success && result.data) {
         const userData = result.data;
@@ -96,11 +133,21 @@ function CompleteProfileContent() {
           window.location.href = '/'; // Redirect to home page
         }, 100);
       } else {
-        setError(result.message || 'Profile completion failed. Please try again.');
+        const friendlyMessage = formatApiError(
+          result.message,
+          'auth/complete-profile',
+          fallbackMessage
+        );
+        setFormError(friendlyMessage);
       }
     } catch (err) {
       console.error('Profile completion error:', err);
-      setError('An error occurred. Please try again.');
+      const friendlyMessage = formatApiError(
+        err instanceof Error ? err.message : undefined,
+        'auth/complete-profile',
+        'An unexpected error occurred. Please try again.'
+      );
+      setFormError(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -146,13 +193,13 @@ function CompleteProfileContent() {
           </CardHeader>
 
           <CardContent>
-            {error && (
+            {formError && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md"
               >
-                <p className="text-sm text-red-600">{error}</p>
+                <p className="text-sm text-red-600">{formError}</p>
               </motion.div>
             )}
 
@@ -189,7 +236,9 @@ function CompleteProfileContent() {
               <Input
                 {...register('phone')}
                 label="Phone Number"
-                placeholder="+1 234 567 8900"
+                placeholder="0XXXXXXXXX"
+                inputMode="numeric"
+                maxLength={10}
                 leftIcon={<Phone className="h-4 w-4" />}
                 error={errors.phone?.message}
                 disabled={isLoading}

@@ -24,7 +24,8 @@ import { Input } from '@/components/ui/Input';
 import AdminLayout from '@/components/layout/AdminLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import StatsCard from '@/components/ui/StatsCard';
-import { BrandsAPI } from '@/api';
+import { BrandsAPI, handleApiError } from '@/api';
+import { formatApiError } from '@/utils/errorMessages';
 
 interface Brand {
   brandId: string;
@@ -156,8 +157,14 @@ export default function BrandsManagementPage() {
         await BrandsAPI.deleteBrand(brandId);
         fetchBrands();
         fetchStats();
-      } catch (error: any) {
-        alert(error.message || 'Failed to archive brand');
+      } catch (error: unknown) {
+        const backendMessage = handleApiError(error);
+        const friendlyMessage = formatApiError(
+          backendMessage,
+          'admin/brands',
+          'Failed to archive brand.'
+        );
+        alert(friendlyMessage);
       }
     } else {
       // Restore
@@ -167,8 +174,14 @@ export default function BrandsManagementPage() {
         await BrandsAPI.restoreBrand(brandId);
         fetchBrands();
         fetchStats();
-      } catch (error: any) {
-        alert(error.message || 'Failed to restore brand');
+      } catch (error: unknown) {
+        const backendMessage = handleApiError(error);
+        const friendlyMessage = formatApiError(
+          backendMessage,
+          'admin/brands',
+          'Failed to restore brand.'
+        );
+        alert(friendlyMessage);
       }
     }
   };
@@ -180,8 +193,14 @@ export default function BrandsManagementPage() {
       resetForm();
       fetchBrands();
       fetchStats();
-    } catch (error: any) {
-      alert(error.message || 'Failed to create brand');
+    } catch (error: unknown) {
+      const backendMessage = handleApiError(error);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/brands',
+        'Failed to create brand. Please review the details and try again.'
+      );
+      alert(friendlyMessage);
     }
   };
 
@@ -210,8 +229,14 @@ export default function BrandsManagementPage() {
       resetForm();
       fetchBrands();
       fetchStats();
-    } catch (error: any) {
-      alert(error.message || 'Failed to update brand');
+    } catch (error: unknown) {
+      const backendMessage = handleApiError(error);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/brands',
+        'Failed to update brand. Please review the details and try again.'
+      );
+      alert(friendlyMessage);
     }
   };
 

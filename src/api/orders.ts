@@ -49,7 +49,15 @@ export interface OrderResponse {
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
+  confirmedAt?: string;
+  shippedAt?: string;
+  deliveredAt?: string;
+  arrivedAt?: string;
+  cancelledAt?: string;
+  autoCompleteScheduledAt?: string;
   notes?: string;
+  adminManaged?: boolean;
+  pointsAwarded?: boolean;
 }
 
 export interface ApiResponse<T> {
@@ -136,6 +144,33 @@ export class OrdersAPI {
       throw new Error(handleApiError(error));
     }
   }
+
+  static async updateStatus(orderId: string, status: string): Promise<OrderResponse> {
+    try {
+      const response = await apiClient.patch<ApiResponse<OrderResponse>>(
+        `/api/orders/${orderId}/status`,
+        null,
+        { params: { status } }
+      );
+      return response.data.data;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  static async getAdminManagedOrders(
+    params?: { page?: number; size?: number }
+  ): Promise<PaginatedResponse<OrderResponse>> {
+    try {
+      const response = await apiClient.get<ApiResponse<PaginatedResponse<OrderResponse>>>(
+        '/api/orders/admin/managed',
+        { params }
+      );
+      return response.data.data;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
   
   /**
    * Cancel order
@@ -183,6 +218,17 @@ export class OrdersAPI {
     }
   }
   
+  static async markAsArrived(orderId: string): Promise<OrderResponse> {
+    try {
+      const response = await apiClient.post<ApiResponse<OrderResponse>>(
+        `/api/orders/${orderId}/arrive`
+      );
+      return response.data.data;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
   /**
    * Complete order
    */
@@ -190,6 +236,19 @@ export class OrdersAPI {
     try {
       const response = await apiClient.post<ApiResponse<OrderResponse>>(
         `/api/orders/${orderId}/complete`
+      );
+      return response.data.data;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  static async confirmReceipt(orderId: string, buyerId: string): Promise<OrderResponse> {
+    try {
+      const response = await apiClient.post<ApiResponse<OrderResponse>>(
+        `/api/orders/${orderId}/receive`,
+        null,
+        { params: { buyerId } }
       );
       return response.data.data;
     } catch (error) {

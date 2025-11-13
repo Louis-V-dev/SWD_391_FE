@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
 import { handleApiError } from '@/api';
+import { formatApiError } from '@/utils/errorMessages';
 
 const registerSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -57,7 +58,10 @@ export default function RegisterPage() {
         router.push('/auth/verify?email=' + encodeURIComponent(data.email));
       }, 2000);
     } catch (err) {
-      setError(handleApiError(err));
+      const fallbackMessage = 'Registration failed. Please review your details and try again.';
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(backendMessage, 'auth/register', fallbackMessage);
+      setError(friendlyMessage);
     } finally {
       setIsLoading(false);
     }

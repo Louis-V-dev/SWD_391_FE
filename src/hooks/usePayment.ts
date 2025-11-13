@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
 import * as paymentApi from '@/api/payment';
+import { handleApiError } from '@/api';
+import { formatApiError } from '@/utils/errorMessages';
 import type { 
   BuyPointsRequest,
   MomoPaymentResponse,
@@ -34,10 +36,15 @@ export const useBuyPoints = () => {
       }
       
       return response;
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || err.message || 'Failed to initiate payment';
-      setError(errorMsg);
-      throw new Error(errorMsg);
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'payments',
+        'Failed to initiate payment.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -59,10 +66,15 @@ export const usePaymentStatus = () => {
     try {
       const status = await paymentApi.checkPaymentStatus(orderId);
       return status;
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || 'Failed to check payment status';
-      setError(errorMsg);
-      throw new Error(errorMsg);
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'payments',
+        'Failed to check payment status.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -87,8 +99,14 @@ export const usePaymentHistory = (userId?: string) => {
     try {
       const data = await paymentApi.getPaymentHistory(userId, startDate, endDate);
       setHistory(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch payment history');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'payments',
+        'Failed to fetch payment history.'
+      );
+      setError(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -113,8 +131,14 @@ export const usePaymentStats = (userId?: string) => {
     try {
       const data = await paymentApi.getTotalSpentStats(userId);
       setStats(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch payment stats');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'payments',
+        'Failed to fetch payment stats.'
+      );
+      setError(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -141,9 +165,14 @@ export const useMomoCallback = () => {
     try {
       await paymentApi.handleMomoRedirect(params);
       return true;
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || 'Failed to process payment callback';
-      setError(errorMsg);
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'payments',
+        'Failed to process payment callback.'
+      );
+      setError(friendlyMessage);
       return false;
     } finally {
       setLoading(false);

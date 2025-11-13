@@ -3,4 +3,6 @@ export { useAuth } from './useAuth';
 export { useItems } from './useItems';
 export * from './usePoints';
 export * from './usePayment';
+export * from './useUsers';
+export * from './usePosts';
 // export { useMarketplace } from './useMarketplace'; // Removed - marketplace listing feature removed

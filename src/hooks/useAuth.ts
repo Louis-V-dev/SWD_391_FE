@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
-import { AuthAPI } from '@/api';
+import { AuthAPI, handleApiError } from '@/api';
 import { API_CONFIG } from '@/config/api.config';
 import type { LoginRequest, RegisterRequest, LoginResponse, UserResponse } from '@/types';
+import { formatApiError } from '@/utils/errorMessages';
 
 interface User {
   userId: string;
@@ -116,9 +117,14 @@ export const useAuth = (): UseAuthReturn => {
       
       return response;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed';
-      setError(errorMessage);
-      throw err;
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'auth/login',
+        'Login failed. Please try again.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -132,9 +138,14 @@ export const useAuth = (): UseAuthReturn => {
       const response = await AuthAPI.register(userData);
       return response;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Registration failed';
-      setError(errorMessage);
-      throw err;
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'auth/register',
+        'Registration failed. Please review your details and try again.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -154,9 +165,14 @@ export const useAuth = (): UseAuthReturn => {
       const response = await AuthAPI.verifyEmail(token);
       return response;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Email verification failed';
-      setError(errorMessage);
-      throw err;
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'auth/verify',
+        'Email verification failed. Please request a new verification link.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -170,9 +186,14 @@ export const useAuth = (): UseAuthReturn => {
       const response = await AuthAPI.requestPasswordReset(email);
       return response;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Password reset request failed';
-      setError(errorMessage);
-      throw err;
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'auth/forgot-password',
+        'Password reset request failed. Please try again.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -186,9 +207,14 @@ export const useAuth = (): UseAuthReturn => {
       const response = await AuthAPI.resetPassword(token, newPassword);
       return response;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Password change failed';
-      setError(errorMessage);
-      throw err;
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'auth/reset-password',
+        'Password change failed. Please try again.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }

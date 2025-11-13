@@ -24,7 +24,8 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Select } from '@/components/ui/Select';
 import AdminLayout from '@/components/layout/AdminLayout';
-import { ItemsAPI, CategoriesAPI, BrandsAPI } from '@/api';
+import { ItemsAPI, CategoriesAPI, BrandsAPI, handleApiError } from '@/api';
+import { formatApiError } from '@/utils/errorMessages';
 import { useAuth } from '@/contexts/AuthContext';
 import { AcquisitionMethod, ItemStatus } from '@/types';
 
@@ -33,7 +34,7 @@ const createItemSchema = z.object({
   description: z.string().min(10, 'Description must be at least 10 characters').max(2000, 'Description too long'),
   categoryId: z.string().min(1, 'Category is required'),
   brandId: z.string().optional(),
-  collectedFromUserId: z.string().optional(), // Optional - if not provided, uses admin's ID
+  collectedFromUserId: z.string().optional(),
   size: z.string().optional(),
   color: z.string().optional(),
   conditionScore: z.number().min(1).max(5, 'Condition score must be between 1 and 5'),
@@ -43,7 +44,7 @@ const createItemSchema = z.object({
   resellPrice: z.number().min(0, 'Resell price is required'),
   weightGrams: z.number().min(1).optional(),
   acquisitionMethod: z.string().min(1, 'Acquisition method is required'),
-  itemStatus: z.string().optional(), // Item status
+  itemStatus: z.string().optional(),
 });
 
 type CreateItemFormData = z.infer<typeof createItemSchema>;
@@ -76,7 +77,7 @@ export default function AdminCreateItemPage() {
     defaultValues: {
       conditionScore: 5.0,
       acquisitionMethod: AcquisitionMethod.COLLECTED,
-      itemStatus: ItemStatus.SUBMITTED
+      itemStatus: ItemStatus.READY_FOR_SALE
     }
   });
 
@@ -163,7 +164,7 @@ export default function AdminCreateItemPage() {
     setUserSearchTerm('');
     setFilteredUsers([]);
     setShowUserDropdown(false);
-    setValue('collectedFromUserId', '');
+    setValue('collectedFromUserId', undefined);
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,21 +216,22 @@ export default function AdminCreateItemPage() {
       setError('');
 
       // Determine the owner: collected from user or admin
-      const ownerId = data.collectedFromUserId || user.userId;
+      const collectedFromUserId = data.collectedFromUserId?.trim();
+      const itemStatusValue = (data.itemStatus as ItemStatus | undefined) ?? ItemStatus.READY_FOR_SALE;
+      const ownerId = collectedFromUserId || user.userId;
 
       // Create item data
       const itemData = {
         ...data,
+        collectedFromUserId: collectedFromUserId || undefined,
         acquisitionMethod: data.acquisitionMethod as AcquisitionMethod,
+        itemStatus: itemStatusValue,
         tags: [],
         metadata: {
           collectedBy: user.userId,
           collectedAt: new Date().toISOString()
         }
       };
-
-      // Remove collectedFromUserId from itemData as it's not part of the API
-      delete (itemData as any).collectedFromUserId;
 
       let createdItem;
 
@@ -255,9 +257,15 @@ export default function AdminCreateItemPage() {
       setCreatedItemId(createdItem.itemId);
       setCreatedItemCode(createdItem.itemCode);
       setShowSuccessModal(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Item creation failed:', err);
-      setError(err.message || 'Failed to create item. If images failed to upload, the item was not created.');
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/items',
+        'Failed to create item. If images failed to upload, the item was not created.'
+      );
+      setError(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -545,39 +553,27 @@ export default function AdminCreateItemPage() {
                 </div>
 
                 <div>
-                  <Select
-                    label="Acquisition Method *"
-                    error={errors.acquisitionMethod?.message}
+                  <label className="block text-sm font-medium mb-1">Acquisition Method</label>
+                  <p className="text-sm text-muted-foreground">
+                    Collected (default for admin created items)
+                  </p>
+                  <input
+                    type="hidden"
+                    value={AcquisitionMethod.COLLECTED}
                     {...register('acquisitionMethod')}
-                  >
-                    <option value={AcquisitionMethod.COLLECTED}>Collected</option>
-                    <option value={AcquisitionMethod.PURCHASED}>Purchased</option>
-                    <option value={AcquisitionMethod.TRADED}>Traded</option>
-                    <option value={AcquisitionMethod.DONATED}>Donated</option>
-                    <option value={AcquisitionMethod.IMPORTED}>Imported</option>
-                  </Select>
+                  />
                 </div>
 
                 <div>
-                  <Select
-                    label="Item Status"
-                    helperText="Default: Submitted"
+                  <label className="block text-sm font-medium mb-1">Item Status</label>
+                  <p className="text-sm text-muted-foreground">
+                    Ready For Sale (automatically applied)
+                  </p>
+                  <input
+                    type="hidden"
+                    value={ItemStatus.READY_FOR_SALE}
                     {...register('itemStatus')}
-                  >
-                    <option value={ItemStatus.SUBMITTED}>Submitted</option>
-                    <option value={ItemStatus.PENDING_COLLECTION}>Pending Collection</option>
-                    <option value={ItemStatus.COLLECTED}>Collected</option>
-                    <option value={ItemStatus.VALUING}>Valuing</option>
-                    <option value={ItemStatus.VALUED}>Valued</option>
-                    <option value={ItemStatus.PROCESSING}>Processing</option>
-                    <option value={ItemStatus.READY_FOR_SALE}>Ready For Sale</option>
-                    <option value={ItemStatus.LISTED}>Listed</option>
-                    <option value={ItemStatus.SOLD}>Sold</option>
-                    <option value={ItemStatus.RENTED}>Rented</option>
-                    <option value={ItemStatus.DONATED}>Donated</option>
-                    <option value={ItemStatus.RECYCLED}>Recycled</option>
-                    <option value={ItemStatus.REJECTED}>Rejected</option>
-                  </Select>
+                  />
                 </div>
               </div>
             </CardContent>

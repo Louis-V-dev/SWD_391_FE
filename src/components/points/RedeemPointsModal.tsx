@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { usePointRedemption, usePointSummary } from '@/hooks/usePoints';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { X, Gift, Percent, Award } from 'lucide-react';
+import { X, Gift, Percent } from 'lucide-react';
 
 interface RedeemPointsModalProps {
   userId: string;
@@ -15,7 +15,7 @@ interface RedeemPointsModalProps {
 
 export function RedeemPointsModal({ userId, isOpen, onClose, onSuccess }: RedeemPointsModalProps) {
   const [pointsToRedeem, setPointsToRedeem] = useState('');
-  const [redemptionType, setRedemptionType] = useState<'DISCOUNT' | 'VOUCHER' | 'DONATION'>('DISCOUNT');
+  const [redemptionType, setRedemptionType] = useState<'DISCOUNT' | 'VOUCHER'>('DISCOUNT');
   const { summary } = usePointSummary(userId);
   const { redeem, loading, error } = usePointRedemption(userId);
 
@@ -72,7 +72,7 @@ export function RedeemPointsModal({ userId, isOpen, onClose, onSuccess }: Redeem
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Redemption Type
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setRedemptionType('DISCOUNT')}
                 className={`p-3 border-2 rounded-lg flex flex-col items-center gap-2 transition-all ${
@@ -94,17 +94,6 @@ export function RedeemPointsModal({ userId, isOpen, onClose, onSuccess }: Redeem
               >
                 <Gift className="h-6 w-6" />
                 <span className="text-xs font-medium">Voucher</span>
-              </button>
-              <button
-                onClick={() => setRedemptionType('DONATION')}
-                className={`p-3 border-2 rounded-lg flex flex-col items-center gap-2 transition-all ${
-                  redemptionType === 'DONATION'
-                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-600 dark:text-gray-400'
-                }`}
-              >
-                <Award className="h-6 w-6" />
-                <span className="text-xs font-medium">Donation</span>
               </button>
             </div>
           </div>

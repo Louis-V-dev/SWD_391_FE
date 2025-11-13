@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, X, Sparkles, Heart, VideoIcon } from 'lucide-react';
 import azureCommunicationService from '@/services/azureCommunicationService';
 import ChatAPI from '@/api/chat';
+import { formatApiError } from '@/utils/errorMessages';
 
 interface VideoCallModalProps {
   callData: {
@@ -413,9 +414,14 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({ callData, onEndCall }) 
         }
       }, 5000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error initializing call:', error);
-      setError(error.message || 'Failed to initialize call');
+      const friendlyMessage = formatApiError(
+        error,
+        'chat',
+        'Failed to initialize call.'
+      );
+      setError(friendlyMessage);
       setCallStatus('failed');
     }
   };

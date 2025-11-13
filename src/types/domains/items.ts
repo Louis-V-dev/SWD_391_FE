@@ -270,6 +270,8 @@ export interface CreateItemRequest {
   brandId?: string;
   name: string;
   description?: string;
+  collectedFromUserId?: string;
+  itemStatus?: ItemStatus;
   size?: string;
   color?: string;
   conditionScore: number;

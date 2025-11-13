@@ -7,6 +7,7 @@ export { ItemsAPI, CategoriesAPI, BrandsAPI } from './items';
 export * from './users';
 export * from './points';
 export * from './payment';
+export * from './posts';
 
 // Export base client and utilities
 export { apiClient, handleApiError } from '@/lib/axios';

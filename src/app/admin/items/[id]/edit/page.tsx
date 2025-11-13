@@ -23,10 +23,11 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Select } from '@/components/ui/Select';
 import AdminLayout from '@/components/layout/AdminLayout';
-import { ItemsAPI, CategoriesAPI, BrandsAPI } from '@/api';
+import { ItemsAPI, CategoriesAPI, BrandsAPI, handleApiError } from '@/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { AcquisitionMethod, ItemStatus } from '@/types';
 import type { ItemResponse } from '@/types';
+import { formatApiError } from '@/utils/errorMessages';
 
 const editItemSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters').max(200, 'Name too long'),
@@ -103,8 +104,14 @@ export default function AdminEditItemPage() {
       setValue('weightGrams', itemData.weightGrams || 0);
       setValue('acquisitionMethod', itemData.acquisitionMethod || AcquisitionMethod.COLLECTED);
       setValue('itemStatus', itemData.itemStatus || ItemStatus.SUBMITTED);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch item');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/items',
+        'Failed to load item details. Please try again.'
+      );
+      setError(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -137,8 +144,14 @@ export default function AdminEditItemPage() {
 
       // Redirect back to detail page
       router.push(`/admin/items/${itemId}`);
-    } catch (err: any) {
-      setError(err.message || 'Failed to update item');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/items',
+        'Failed to update the item. Please review the details and try again.'
+      );
+      setError(friendlyMessage);
     } finally {
       setSaving(false);
     }

@@ -8,6 +8,7 @@ import { CheckCircle, XCircle, Mail, ArrowLeft, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatApiError } from '@/utils/errorMessages';
 
 function VerifyContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'idle'>('idle');
@@ -38,7 +39,12 @@ function VerifyContent() {
       }, 3000);
     } catch (error) {
       setStatus('error');
-      setMessage(error instanceof Error ? error.message : 'Verification failed');
+      const friendlyMessage = formatApiError(
+        error instanceof Error ? error.message : undefined,
+        'auth/verify',
+        'We were unable to verify your email. Please request a new verification link.'
+      );
+      setMessage(friendlyMessage);
     }
   };
 

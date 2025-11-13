@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as pointsApi from '@/api/points';
+import { handleApiError } from '@/api';
+import { formatApiError } from '@/utils/errorMessages';
 import type { 
   PointSummary, 
   PointTransaction, 
   PointStatistics,
   PointRedemptionRequest,
-  PagedTransactions,
-  PointEarningRule
+  PagedTransactions
 } from '@/types/domains/points';
 
 export const usePointSummary = (userId?: string) => {
@@ -22,8 +23,14 @@ export const usePointSummary = (userId?: string) => {
     try {
       const data = await pointsApi.getPointSummary(userId);
       setSummary(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch point summary');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'points',
+        'Failed to fetch point summary.'
+      );
+      setError(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -49,8 +56,14 @@ export const usePointTransactions = (userId?: string, page: number = 0, size: nu
     try {
       const data = await pointsApi.getUserTransactions(userId, page, size);
       setTransactions(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch transactions');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'points',
+        'Failed to fetch point transactions.'
+      );
+      setError(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -76,8 +89,14 @@ export const useRecentTransactions = (userId?: string, limit: number = 10) => {
     try {
       const data = await pointsApi.getRecentTransactions(userId, limit);
       setTransactions(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch recent transactions');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'points',
+        'Failed to fetch recent transactions.'
+      );
+      setError(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -103,8 +122,14 @@ export const usePointStatistics = (userId?: string) => {
     try {
       const data = await pointsApi.getPointStatistics(userId);
       setStatistics(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch point statistics');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'points',
+        'Failed to fetch point statistics.'
+      );
+      setError(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -127,10 +152,15 @@ export const usePointRedemption = (userId?: string) => {
     try {
       const transaction = await pointsApi.redeemPoints(request);
       return transaction;
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || 'Failed to redeem points';
-      setError(errorMsg);
-      throw new Error(errorMsg);
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'points',
+        'Failed to redeem points. Please try again.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -157,81 +187,5 @@ export const usePointRedemption = (userId?: string) => {
   };
 
   return { redeem, canRedeem, hasEnough, loading, error };
-};
-
-export const useExpiringPoints = (userId?: string, days: number = 7) => {
-  const [expiringPoints, setExpiringPoints] = useState<PointTransaction[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchExpiringPoints = useCallback(async () => {
-    if (!userId) return;
-    
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await pointsApi.getExpiringSoonPoints(userId, days);
-      setExpiringPoints(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch expiring points');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, days]);
-
-  useEffect(() => {
-    fetchExpiringPoints();
-  }, [fetchExpiringPoints]);
-
-  const notify = async () => {
-    if (!userId) return;
-    
-    try {
-      await pointsApi.notifyExpiringPoints(userId);
-    } catch (err: any) {
-      throw new Error(err.response?.data?.message || 'Failed to send notification');
-    }
-  };
-
-  return { expiringPoints, loading, error, notify, refetch: fetchExpiringPoints };
-};
-
-export const usePointEarningRules = () => {
-  const [rules, setRules] = useState<PointEarningRule[]>([]);
-  const [activeRule, setActiveRule] = useState<PointEarningRule | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchRules = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [allRules, active] = await Promise.all([
-        pointsApi.getAllRules(),
-        pointsApi.getActiveRule()
-      ]);
-      setRules(allRules);
-      setActiveRule(active);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch rules');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchRules();
-  }, [fetchRules]);
-
-  const activateRule = async (ruleId: string) => {
-    try {
-      await pointsApi.activateRule(ruleId);
-      await fetchRules();
-    } catch (err: any) {
-      throw new Error(err.response?.data?.message || 'Failed to activate rule');
-    }
-  };
-
-  return { rules, activeRule, loading, error, activateRule, refetch: fetchRules };
 };
 

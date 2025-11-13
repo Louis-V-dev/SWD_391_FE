@@ -22,7 +22,6 @@ export interface User {
   followersCount?: number;
   followingCount?: number;
   itemsCount?: number;
-  listingsCount?: number;
   ordersCount?: number;
   lastLogin?: string;
   createdAt: string;
@@ -48,7 +47,6 @@ export interface UserStatistics {
   followersCount: number;
   followingCount: number;
   itemsCount: number;
-  listingsCount: number;
   ordersCount: number;
   createdAt: string;
   lastLogin?: string;

@@ -5,3 +5,4 @@ export * from './domains/items';
 export * from './domains/common';
 export * from './domains/points';
 export * from './domains/payment'; 
+export * from './domains/posts';

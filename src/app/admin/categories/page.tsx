@@ -22,7 +22,8 @@ import { Input } from '@/components/ui/Input';
 import AdminLayout from '@/components/layout/AdminLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import StatsCard from '@/components/ui/StatsCard';
-import { CategoriesAPI } from '@/api';
+import { CategoriesAPI, handleApiError } from '@/api';
+import { formatApiError } from '@/utils/errorMessages';
 
 interface Category {
   categoryId: string;
@@ -127,8 +128,14 @@ export default function CategoriesManagementPage() {
         await CategoriesAPI.deleteCategory(categoryId);
         fetchCategories();
         fetchStats();
-      } catch (error: any) {
-        alert(error.message || 'Failed to archive category');
+      } catch (error: unknown) {
+        const backendMessage = handleApiError(error);
+        const friendlyMessage = formatApiError(
+          backendMessage,
+          'admin/categories',
+          'Failed to archive category.'
+        );
+        alert(friendlyMessage);
       }
     } else {
       // Restore
@@ -138,8 +145,14 @@ export default function CategoriesManagementPage() {
         await CategoriesAPI.restoreCategory(categoryId);
         fetchCategories();
         fetchStats();
-      } catch (error: any) {
-        alert(error.message || 'Failed to restore category');
+      } catch (error: unknown) {
+        const backendMessage = handleApiError(error);
+        const friendlyMessage = formatApiError(
+          backendMessage,
+          'admin/categories',
+          'Failed to restore category.'
+        );
+        alert(friendlyMessage);
       }
     }
   };
@@ -155,8 +168,14 @@ export default function CategoriesManagementPage() {
       resetForm();
       fetchCategories();
       fetchStats();
-    } catch (error: any) {
-      alert(error.message || 'Failed to create category');
+    } catch (error: unknown) {
+      const backendMessage = handleApiError(error);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/categories',
+        'Failed to create category. Please review the details and try again.'
+      );
+      alert(friendlyMessage);
     }
   };
 
@@ -186,8 +205,14 @@ export default function CategoriesManagementPage() {
       resetForm();
       fetchCategories();
       fetchStats();
-    } catch (error: any) {
-      alert(error.message || 'Failed to update category');
+    } catch (error: unknown) {
+      const backendMessage = handleApiError(error);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/categories',
+        'Failed to update category. Please review the details and try again.'
+      );
+      alert(friendlyMessage);
     }
   };
 

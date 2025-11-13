@@ -5,9 +5,9 @@
  * Features: Multi-image upload, delete/edit messages, date separators, infinite scroll, themed UI
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import ChatAPI, { Conversation, ChatMessage } from '@/api/chat';
 import { useWebSocket, useConversationUpdates } from '@/hooks/useWebSocket';
 import { useVideoCall } from '@/contexts/VideoCallContext';
@@ -38,6 +38,7 @@ interface MessageGroup {
 export default function ChatPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { startVideoCall } = useVideoCall();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -66,6 +67,15 @@ export default function ChatPage() {
   const [editContent, setEditContent] = useState('');
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [showImagePreview, setShowImagePreview] = useState(false);
+  const prefillHandledRef = useRef<string | null>(null);
+  const conversationIdParam = useMemo(
+    () => searchParams?.get('conversationId'),
+    [searchParams]
+  );
+  const startWithUserParam = useMemo(
+    () => searchParams?.get('startWithUser'),
+    [searchParams]
+  );
 
   // WebSocket for selected conversation
   const { isConnected, lastMessage, lastReadReceipt } = useWebSocket(selectedConversation?.conversationId || null);
@@ -79,6 +89,88 @@ export default function ChatPage() {
       router.push('/auth/login');
     }
   }, [user, isLoading, router]);
+
+  // Preselect conversation based on query parameters
+  useEffect(() => {
+    if (!user) return;
+    if (!conversationIdParam && !startWithUserParam) return;
+
+    const key =
+      conversationIdParam != null
+        ? `conv:${conversationIdParam}`
+        : `user:${startWithUserParam}`;
+
+    if (prefillHandledRef.current === key) {
+      return;
+    }
+
+    const prepareConversation = async () => {
+      try {
+        if (conversationIdParam) {
+          const existing = conversations.find(
+            (conv) => conv.conversationId === conversationIdParam
+          );
+
+          if (existing) {
+            setSelectedConversation(existing);
+            router.replace(`/chat?conversationId=${existing.conversationId}`);
+            return;
+          }
+
+          const { conversation } = await ChatAPI.getConversation(conversationIdParam);
+          setConversations((prev) => {
+            const hasConversation = prev.some(
+              (conv) => conv.conversationId === conversation.conversationId
+            );
+            if (hasConversation) return prev;
+            return [conversation, ...prev];
+          });
+          setSelectedConversation(conversation);
+          router.replace(`/chat?conversationId=${conversation.conversationId}`);
+          return;
+        }
+
+        if (startWithUserParam) {
+          if (user.userId === startWithUserParam) {
+            return;
+          }
+
+          const existing = conversations.find(
+            (conv) => conv.otherUser.userId === startWithUserParam
+          );
+
+          if (existing) {
+            setSelectedConversation(existing);
+            router.replace(`/chat?conversationId=${existing.conversationId}`);
+            return;
+          }
+
+          const { conversation } = await ChatAPI.createConversation(startWithUserParam, false);
+          setConversations((prev) => {
+            const hasConversation = prev.some(
+              (conv) => conv.conversationId === conversation.conversationId
+            );
+            if (hasConversation) return prev;
+            return [conversation, ...prev];
+          });
+          setSelectedConversation(conversation);
+          router.replace(`/chat?conversationId=${conversation.conversationId}`);
+        }
+      } catch (error) {
+        console.error('Failed to prepare chat conversation from query parameters:', error);
+      } finally {
+        prefillHandledRef.current = key;
+      }
+    };
+
+    prepareConversation();
+  }, [
+    user,
+    conversations,
+    conversationIdParam,
+    startWithUserParam,
+    router,
+  ]);
 
   // Load conversations
   useEffect(() => {
@@ -161,6 +253,14 @@ export default function ChatPage() {
 
     loadMessages();
   }, [selectedConversation]);
+
+  // Keep URL in sync with selected conversation
+  useEffect(() => {
+    if (!selectedConversation) return;
+    if (conversationIdParam === selectedConversation.conversationId) return;
+
+    router.replace(`/chat?conversationId=${selectedConversation.conversationId}`);
+  }, [selectedConversation, conversationIdParam, router]);
 
   // Handle incoming WebSocket messages
   useEffect(() => {

@@ -1,110 +1,257 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { 
   ArrowLeft, 
-  Upload, 
-  X, 
-  Plus,
   Camera,
   DollarSign,
-  Package,
-  Info
+  Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Badge } from '@/components/ui/Badge';
 import ImageUpload from '@/components/ui/ImageUpload';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { formatApiError } from '@/utils/errorMessages';
+import { ItemsAPI, CategoriesAPI, BrandsAPI, handleApiError } from '@/api';
+import { AcquisitionMethod, Brand, Category, CreateItemRequest, UpdateItemRequest } from '@/types';
 
-const categories = [
-  'Clothing', 'Shoes', 'Accessories', 'Bags', 'Jewelry', 'Outerwear'
-];
-
-const conditions = [
-  { value: 'new', label: 'New with tags' },
-  { value: 'like-new', label: 'Like new' },
-  { value: 'very-good', label: 'Very good' },
-  { value: 'good', label: 'Good' },
-  { value: 'fair', label: 'Fair' }
+const conditionOptions = [
+  { value: 5, label: 'New with tags' },
+  { value: 4.5, label: 'Like new' },
+  { value: 4, label: 'Very good' },
+  { value: 3.5, label: 'Good' },
+  { value: 3, label: 'Fair' }
 ];
 
 const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'];
 
 const createItemSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(100, 'Title too long'),
-  description: z.string().min(10, 'Description must be at least 10 characters').max(1000, 'Description too long'),
-  price: z.number().min(1, 'Price must be at least $1').max(10000, 'Price too high'),
-  originalPrice: z.number().optional(),
-  brand: z.string().min(1, 'Brand is required'),
-  category: z.string().min(1, 'Category is required'),
-  condition: z.string().min(1, 'Condition is required'),
-  size: z.string().min(1, 'Size is required'),
-  color: z.string().min(1, 'Color is required'),
-  material: z.string().optional(),
+  name: z.string().min(3, 'Name must be at least 3 characters').max(200, 'Name too long'),
+  description: z.string().min(10, 'Description must be at least 10 characters').max(2000, 'Description too long'),
+  categoryId: z.string().min(1, 'Category is required'),
+  brandId: z.string().optional(),
+  size: z.string().optional(),
+  color: z.string().optional(),
+  conditionScore: z.number().min(1, 'Condition score must be at least 1').max(5, 'Condition score cannot exceed 5'),
+  conditionDescription: z.string().optional(),
+  originalPrice: z.number().min(0).optional(),
+  resellPrice: z.number().min(1, 'Resell price must be at least 1'),
+  weightGrams: z.number().min(0).optional(),
 });
 
 type CreateItemFormData = z.infer<typeof createItemSchema>;
 
 export default function CreateItemPage() {
-  const [images, setImages] = useState<string[]>([]); // Changed from File[] to string[]
+  const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPrefilling, setIsPrefilling] = useState(false);
   const [error, setError] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editingItemId = searchParams.get('itemId');
+  const isEditing = Boolean(editingItemId);
+  const initialImagesRef = useRef<string[]>([]);
 
   const {
     register,
     handleSubmit,
     watch,
-    setValue,
+    reset,
     formState: { errors },
   } = useForm<CreateItemFormData>({
     resolver: zodResolver(createItemSchema),
+    defaultValues: {
+      conditionScore: 4,
+      categoryId: '',
+      brandId: '',
+      size: '',
+      color: '',
+    }
   });
 
-  const watchedPrice = watch('price');
+  const watchedResellPrice = watch('resellPrice');
   const watchedOriginalPrice = watch('originalPrice');
+  const watchedConditionScore = watch('conditionScore');
+
+  useEffect(() => {
+    if (!editingItemId) {
+      initialImagesRef.current = [];
+      return;
+    }
+
+    const loadItem = async () => {
+      try {
+        setIsPrefilling(true);
+        setError('');
+        const item = await ItemsAPI.getItemById(editingItemId);
+
+        reset({
+          name: item.name ?? '',
+          description: item.description ?? '',
+          categoryId: item.categoryId ?? '',
+          brandId: item.brandId ?? '',
+          size: item.size ?? '',
+          color: item.color ?? '',
+          conditionScore: item.conditionScore ?? 4,
+          conditionDescription: item.conditionDescription ?? '',
+          originalPrice: item.originalPrice ?? undefined,
+          resellPrice: item.resellPrice ?? item.currentEstimatedValue ?? undefined,
+          weightGrams: item.weightGrams ?? undefined,
+        });
+
+        const existingImages = item.images ?? [];
+        setUploadedUrls(existingImages);
+        initialImagesRef.current = existingImages;
+        setSelectedFiles([]);
+      } catch (err) {
+        console.error('Failed to load item for editing', err);
+        setError('Unable to load item details. Please try again or contact support.');
+      } finally {
+        setIsPrefilling(false);
+      }
+    };
+
+    loadItem();
+  }, [editingItemId, reset]);
+
+  useEffect(() => {
+    const loadMetadata = async () => {
+      try {
+        const [activeCategories, activeBrands] = await Promise.all([
+          CategoriesAPI.getActiveCategories(),
+          BrandsAPI.getActiveBrands()
+        ]);
+        setCategories(activeCategories ?? []);
+        setBrands(activeBrands ?? []);
+      } catch (err) {
+        console.error('Failed to load item metadata', err);
+      }
+    };
+
+    loadMetadata();
+  }, []);
 
   const onSubmit = async (data: CreateItemFormData) => {
+    if (!user?.userId) {
+      setError('You must be logged in to manage items.');
+      return;
+    }
+
+    if (isPrefilling) {
+      return;
+    }
+
+    const remoteImages = uploadedUrls.filter(url => !url.startsWith('blob:'));
+    const hasRemoteImages = remoteImages.length > 0;
+    const hasNewFiles = selectedFiles.length > 0;
+
+    if (!hasRemoteImages && !hasNewFiles) {
+      setError('Please upload at least one image for your item.');
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError('');
 
-      // Here you would upload images and create the item
-      console.log('Creating item:', data);
-      console.log('Images:', images);
+      if (isEditing && editingItemId) {
+        const updatePayload: UpdateItemRequest = {
+          categoryId: data.categoryId,
+          brandId: data.brandId ? data.brandId : undefined,
+          name: data.name,
+          description: data.description,
+          size: data.size ? data.size : undefined,
+          color: data.color ? data.color : undefined,
+          conditionScore: data.conditionScore,
+          conditionDescription: data.conditionDescription ? data.conditionDescription : undefined,
+          originalPrice: data.originalPrice ?? undefined,
+          currentEstimatedValue: data.originalPrice ?? data.resellPrice,
+          resellPrice: data.resellPrice,
+          weightGrams: data.weightGrams ?? undefined,
+          images: hasRemoteImages ? remoteImages : [],
+        };
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+        await ItemsAPI.updateItem(editingItemId, updatePayload);
 
-      router.push('/dashboard');
+        const removedImages = initialImagesRef.current.filter(url => !remoteImages.includes(url));
+        if (removedImages.length > 0) {
+          await Promise.all(
+            removedImages.map((imageUrl) => ItemsAPI.removeImage(editingItemId, imageUrl))
+          );
+        }
+
+        if (selectedFiles.length > 0) {
+          await ItemsAPI.uploadMultipleImages(editingItemId, selectedFiles);
+        }
+
+        router.push('/profile/items');
+        return;
+      }
+
+      const payload: CreateItemRequest = {
+        categoryId: data.categoryId,
+        brandId: data.brandId ? data.brandId : undefined,
+        name: data.name,
+        description: data.description,
+        size: data.size ? data.size : undefined,
+        color: data.color ? data.color : undefined,
+        conditionScore: data.conditionScore,
+        conditionDescription: data.conditionDescription ? data.conditionDescription : undefined,
+        originalPrice: data.originalPrice ?? undefined,
+        currentEstimatedValue: data.originalPrice ?? data.resellPrice,
+        resellPrice: data.resellPrice,
+        weightGrams: data.weightGrams ?? undefined,
+        acquisitionMethod: AcquisitionMethod.COLLECTED,
+        images: undefined,
+        tags: [],
+        metadata: {
+          createdVia: 'USER_PORTAL',
+        },
+      };
+
+      const createdItem = await ItemsAPI.createItem(payload, user.userId);
+
+      if (createdItem?.itemId && selectedFiles.length > 0) {
+        await ItemsAPI.uploadMultipleImages(createdItem.itemId, selectedFiles);
+      }
+
+      router.push('/profile/items');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create item');
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'items',
+        isEditing ? 'Failed to update item. Please try again.' : 'Failed to create item. Please try again.'
+      );
+      setError(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleImageUpload = (urls: string[]) => { // Changed from File[] to string[]
-    setImages(prev => [...prev, ...urls].slice(0, 10)); // Max 10 images
-  };
+  const handleImageUpload = useCallback((urls: string[]) => {
+    setUploadedUrls(urls.slice(0, 10));
+  }, []);
 
-  const removeImage = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
-  };
+  const handleFileSelect = useCallback((files: File[]) => {
+    setSelectedFiles(files.slice(0, 10));
+  }, []);
 
-  const savings = watchedOriginalPrice && watchedPrice 
-    ? Math.round(((watchedOriginalPrice - watchedPrice) / watchedOriginalPrice) * 100)
+  const savings = watchedOriginalPrice && watchedResellPrice 
+    ? Math.round(((watchedOriginalPrice - watchedResellPrice) / watchedOriginalPrice) * 100)
     : 0;
 
   const containerVariants = {
@@ -129,6 +276,14 @@ export default function CreateItemPage() {
     }
   };
 
+  if (isPrefilling) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -150,9 +305,13 @@ export default function CreateItemPage() {
 
           {/* Page Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">List a New Item</h1>
+            <h1 className="text-3xl font-bold mb-2">
+              {isEditing ? 'Edit Item' : 'List a New Item'}
+            </h1>
             <p className="text-muted-foreground">
-              Share your pre-loved fashion items with our sustainable community
+              {isEditing
+                ? 'Update your listing details and keep potential buyers informed.'
+                : 'Share your pre-loved fashion items with our sustainable community'}
             </p>
           </div>
 
@@ -170,35 +329,12 @@ export default function CreateItemPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <ImageUpload onUpload={handleImageUpload} />
-                  
-                  {images.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                      {images.map((imageUrl, index) => (
-                        <div key={index} className="relative group">
-                          <div className="aspect-square bg-muted rounded-lg overflow-hidden">
-                            <img
-                              src={imageUrl} // Changed from URL.createObjectURL(image) to imageUrl
-                              alt={`Upload ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => removeImage(index)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                          {index === 0 && (
-                            <Badge className="absolute bottom-2 left-2">Cover</Badge>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <ImageUpload
+                    onUpload={handleImageUpload}
+                    existingImages={uploadedUrls.filter(url => !url.startsWith('blob:'))}
+                    mode="deferred"
+                    onFileSelect={handleFileSelect}
+                  />
                 </CardContent>
               </Card>
             </motion.div>
@@ -211,14 +347,14 @@ export default function CreateItemPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Title *</label>
+                    <label className="block text-sm font-medium mb-2">Name *</label>
                     <Input
-                      {...register('title')}
+                      {...register('name')}
                       placeholder="e.g., Vintage Levi's Denim Jacket"
-                      className={errors.title ? 'border-red-500' : ''}
+                      className={errors.name ? 'border-red-500' : ''}
                     />
-                    {errors.title && (
-                      <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>
+                    {errors.name && (
+                      <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
                     )}
                   </div>
 
@@ -239,128 +375,139 @@ export default function CreateItemPage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Brand *</label>
-                      <Input
-                        {...register('brand')}
-                        placeholder="e.g., Levi's, Nike, Zara"
-                        className={errors.brand ? 'border-red-500' : ''}
-                      />
-                      {errors.brand && (
-                        <p className="text-red-500 text-sm mt-1">{errors.brand.message}</p>
-                      )}
-                    </div>
-
-                    <div>
                       <label className="block text-sm font-medium mb-2">Category *</label>
                       <select
-                        {...register('category')}
+                        {...register('categoryId')}
                         className={`w-full px-3 py-2 border rounded-md ${
-                          errors.category ? 'border-red-500' : 'border-input'
+                          errors.categoryId ? 'border-red-500' : 'border-input'
                         }`}
                       >
                         <option value="">Select a category</option>
                         {categories.map((category) => (
-                          <option key={category} value={category.toLowerCase()}>
-                            {category}
+                          <option key={category.categoryId} value={category.categoryId}>
+                            {category.name}
                           </option>
                         ))}
                       </select>
-                      {errors.category && (
-                        <p className="text-red-500 text-sm mt-1">{errors.category.message}</p>
+                      {errors.categoryId && (
+                        <p className="text-red-500 text-sm mt-1">{errors.categoryId.message}</p>
                       )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Brand</label>
+                      <select
+                        {...register('brandId')}
+                        className="w-full px-3 py-2 border rounded-md border-input"
+                      >
+                        <option value="">Select brand (optional)</option>
+                        {brands.map((brand) => (
+                          <option key={brand.brandId} value={brand.brandId}>
+                            {brand.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Condition *</label>
-                      <select
-                        {...register('condition')}
-                        className={`w-full px-3 py-2 border rounded-md ${
-                          errors.condition ? 'border-red-500' : 'border-input'
-                        }`}
-                      >
-                        <option value="">Select condition</option>
-                        {conditions.map((condition) => (
-                          <option key={condition.value} value={condition.value}>
-                            {condition.label}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.condition && (
-                        <p className="text-red-500 text-sm mt-1">{errors.condition.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Size *</label>
+                      <label className="block text-sm font-medium mb-2">Size</label>
                       <select
                         {...register('size')}
-                        className={`w-full px-3 py-2 border rounded-md ${
-                          errors.size ? 'border-red-500' : 'border-input'
-                        }`}
+                        className="w-full px-3 py-2 border rounded-md border-input"
                       >
-                        <option value="">Select size</option>
+                        <option value="">Select size (optional)</option>
                         {sizes.map((size) => (
                           <option key={size} value={size}>
                             {size}
                           </option>
                         ))}
                       </select>
-                      {errors.size && (
-                        <p className="text-red-500 text-sm mt-1">{errors.size.message}</p>
-                      )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-2">Color *</label>
+                      <label className="block text-sm font-medium mb-2">Color</label>
                       <Input
                         {...register('color')}
                         placeholder="e.g., Blue, Black, White"
-                        className={errors.color ? 'border-red-500' : ''}
                       />
-                      {errors.color && (
-                        <p className="text-red-500 text-sm mt-1">{errors.color.message}</p>
-                      )}
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Material (Optional)</label>
-                    <Input
-                      {...register('material')}
-                      placeholder="e.g., 100% Cotton, Polyester Blend"
-                    />
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Weight (grams)</label>
+                      <Input
+                        type="number"
+                        step="1"
+                        {...register('weightGrams', { valueAsNumber: true })}
+                        placeholder="e.g., 500"
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
 
-            {/* Pricing */}
+            {/* Condition & Pricing */}
             <motion.div variants={itemVariants}>
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <DollarSign className="h-5 w-5" />
-                    <span>Pricing</span>
+                    <span>Condition & Pricing</span>
                   </CardTitle>
+                  <CardDescription>
+                    Set a fair price and describe the condition so buyers know what to expect.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Your Price *</label>
+                      <label className="block text-sm font-medium mb-2">Condition Score *</label>
+                      <select
+                        {...register('conditionScore', { valueAsNumber: true })}
+                        className={`w-full px-3 py-2 border rounded-md ${
+                          errors.conditionScore ? 'border-red-500' : 'border-input'
+                        }`}
+                      >
+                        <option value="">Select condition</option>
+                        {conditionOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.conditionScore && (
+                        <p className="text-red-500 text-sm mt-1">{errors.conditionScore.message}</p>
+                      )}
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Selected score: {watchedConditionScore ? `${watchedConditionScore}/5` : 'Not set yet'}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Condition Details</label>
+                      <Input
+                        {...register('conditionDescription')}
+                        placeholder="e.g., Worn twice, no visible flaws"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Resell Price *</label>
                       <Input
                         type="number"
                         step="0.01"
-                        {...register('price', { valueAsNumber: true })}
+                        {...register('resellPrice', { valueAsNumber: true })}
                         placeholder="0.00"
-                        className={errors.price ? 'border-red-500' : ''}
+                        className={errors.resellPrice ? 'border-red-500' : ''}
                       />
-                      {errors.price && (
-                        <p className="text-red-500 text-sm mt-1">{errors.price.message}</p>
+                      {errors.resellPrice && (
+                        <p className="text-red-500 text-sm mt-1">{errors.resellPrice.message}</p>
                       )}
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium mb-2">Original Price (Optional)</label>
                       <Input
@@ -403,10 +550,10 @@ export default function CreateItemPage() {
               <Button 
                 type="submit" 
                 variant="gradient" 
-                disabled={isLoading || images.length === 0}
+                disabled={isLoading}
                 className="min-w-[120px]"
               >
-                {isLoading ? 'Creating...' : 'List Item'}
+                {isLoading ? (isEditing ? 'Saving...' : 'Creating...') : (isEditing ? 'Save Changes' : 'List Item')}
               </Button>
             </motion.div>
           </form>

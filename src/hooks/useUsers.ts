@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as userApi from '@/api/users';
 import type { User, UserUpdateRequest, UserStatistics, UserManagementSummary } from '@/types/domains/users';
+import { handleApiError } from '@/api';
+import { formatApiError } from '@/utils/errorMessages';
 
 export const useUser = (userId?: string) => {
   const [user, setUser] = useState<User | null>(null);
@@ -15,8 +17,14 @@ export const useUser = (userId?: string) => {
     try {
       const data = await userApi.getUserById(userId);
       setUser(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch user');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'users',
+        'Failed to fetch user details.'
+      );
+      setError(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -35,9 +43,15 @@ export const useUser = (userId?: string) => {
       const updated = await userApi.updateUser(userId, data);
       setUser(updated);
       return updated;
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update user');
-      throw err;
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'users',
+        'Failed to update user.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -52,9 +66,15 @@ export const useUser = (userId?: string) => {
       const updated = await userApi.updateUserAvatar(userId, avatarUrl);
       setUser(updated);
       return updated;
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update avatar');
-      throw err;
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'users',
+        'Failed to update avatar.'
+      );
+      setError(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -76,8 +96,14 @@ export const useUserStatistics = (userId?: string) => {
     try {
       const data = await userApi.getUserStatistics(userId);
       setStatistics(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch statistics');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'users',
+        'Failed to fetch user statistics.'
+      );
+      setError(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -101,8 +127,14 @@ export const useUserManagement = (page: number = 0, size: number = 10) => {
     try {
       const data = await userApi.getUserManagementSummary(page, size);
       setSummary(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch user management summary');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/users',
+        'Failed to fetch user management summary.'
+      );
+      setError(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -116,8 +148,14 @@ export const useUserManagement = (page: number = 0, size: number = 10) => {
     try {
       await userApi.banUser(userId, reason);
       await fetchSummary();
-    } catch (err: any) {
-      throw new Error(err.response?.data?.message || 'Failed to ban user');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/users',
+        'Failed to ban user.'
+      );
+      throw new Error(friendlyMessage);
     }
   };
 
@@ -125,8 +163,14 @@ export const useUserManagement = (page: number = 0, size: number = 10) => {
     try {
       await userApi.unbanUser(userId);
       await fetchSummary();
-    } catch (err: any) {
-      throw new Error(err.response?.data?.message || 'Failed to unban user');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/users',
+        'Failed to unban user.'
+      );
+      throw new Error(friendlyMessage);
     }
   };
 
@@ -134,8 +178,14 @@ export const useUserManagement = (page: number = 0, size: number = 10) => {
     try {
       await userApi.activateUser(userId);
       await fetchSummary();
-    } catch (err: any) {
-      throw new Error(err.response?.data?.message || 'Failed to activate user');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/users',
+        'Failed to activate user.'
+      );
+      throw new Error(friendlyMessage);
     }
   };
 
@@ -143,8 +193,14 @@ export const useUserManagement = (page: number = 0, size: number = 10) => {
     try {
       await userApi.deactivateUser(userId);
       await fetchSummary();
-    } catch (err: any) {
-      throw new Error(err.response?.data?.message || 'Failed to deactivate user');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/users',
+        'Failed to deactivate user.'
+      );
+      throw new Error(friendlyMessage);
     }
   };
 
@@ -152,8 +208,14 @@ export const useUserManagement = (page: number = 0, size: number = 10) => {
     try {
       await userApi.verifyUser(userId);
       await fetchSummary();
-    } catch (err: any) {
-      throw new Error(err.response?.data?.message || 'Failed to verify user');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/users',
+        'Failed to verify user.'
+      );
+      throw new Error(friendlyMessage);
     }
   };
 
@@ -188,8 +250,14 @@ export const useSocialFeatures = (userId?: string) => {
       ]);
       setFollowersCount(followers);
       setFollowingCount(following);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch social counts');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'users',
+        'Failed to fetch social counts.'
+      );
+      setError(friendlyMessage);
     } finally {
       setLoading(false);
     }

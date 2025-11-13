@@ -3,8 +3,6 @@ export type TransactionType =
   | 'EARNED_PURCHASE'
   | 'EARNED_REVIEW'
   | 'EARNED_REFERRAL'
-  | 'EARNED_DONATION'
-  | 'COLLECTION_REWARD'
   | 'PURCHASED'
   | 'SPENT_DISCOUNT'
   | 'SPENT_PREMIUM'
@@ -22,7 +20,6 @@ export interface PointTransaction {
   description: string;
   balanceBefore: number;
   balanceAfter: number;
-  expiresAt?: string;
   status: TransactionStatus;
   createdAt: string;
   orderId?: string;
@@ -34,8 +31,6 @@ export interface PointSummary {
   totalEarnedPoints: number;
   totalSpentPoints: number;
   availablePoints: number;
-  expiringPoints: number;
-  expiringInDays: number;
   pointsByType: Record<string, number>;
   membershipLevel?: string;
 }
@@ -63,32 +58,7 @@ export interface PointStatistics {
   totalEarned: number;
   totalSpent: number;
   available: number;
-  expiring7Days: number;
-  expiring30Days: number;
   pointsByType: Record<string, number>;
-}
-
-export interface PointEarningRule {
-  ruleId: string;
-  ruleName: string;
-  description?: string;
-  pointsPerPurchase: number;
-  pointsPerCollection: number;
-  pointsPerReview: number;
-  pointsPerReferral: number;
-  signupBonus: number;
-  dailyLoginPoints: number;
-  pointValueInCurrency: number;
-  minimumRedemptionPoints: number;
-  pointsExpireInDays: number;
-  expirationEnabled: boolean;
-  eventMultiplier: number;
-  eventStartDate?: string;
-  eventEndDate?: string;
-  isActive: boolean;
-  isEventActive: boolean;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface PagedTransactions {

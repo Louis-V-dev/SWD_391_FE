@@ -3,15 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, usePathname } from 'next/navigation';
-import { 
-  User as UserIcon, 
-  Settings, 
-  Package, 
-  MapPin, 
+import {
+  User as UserIcon,
+  Settings,
+  Package,
+  MapPin,
   ShoppingBag,
   Award,
-  Gift,
-  ExternalLink,
   Loader2
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -24,7 +22,6 @@ const sidebarItems = [
   { id: 'address', name: 'Addresses', icon: MapPin, path: '/profile/addresses' },
   { id: 'points', name: 'Points', icon: Award, path: '/profile/points' },
   { id: 'orders', name: 'Orders', icon: ShoppingBag, path: '/profile/orders' },
-  { id: 'donations', name: 'Donations', icon: Gift, path: '/profile/donations' },
   { id: 'settings', name: 'Settings', icon: Settings, path: '/profile/settings' },
 ];
 

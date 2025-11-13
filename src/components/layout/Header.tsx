@@ -4,17 +4,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  Recycle, 
-  User, 
-  Bell, 
-  Menu, 
+import {
+  Recycle,
+  User,
+  Bell,
+  Menu,
   X,
   Search,
   LogOut,
   Settings,
   ChevronDown,
-  Gift,
   ShoppingBag
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -85,6 +84,7 @@ export default function Header({
   const navigation = [
     { name: 'Home', href: '/', current: pathname === '/' },
     { name: 'Marketplace', href: '/marketplace', current: pathname === '/marketplace' },
+    { name: 'Community', href: '/community', current: pathname?.startsWith('/community') },
   ];
 
   const handleSearch = (e: React.FormEvent) => {
@@ -263,15 +263,6 @@ export default function Header({
                             >
                               <User className="mr-3 h-4 w-4" />
                               My Profile
-                            </Link>
-
-                            <Link
-                              href="/profile/donations"
-                              className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent transition-colors"
-                              onClick={() => setUserMenuOpen(false)}
-                            >
-                              <Gift className="mr-3 h-4 w-4" />
-                              My Donations
                             </Link>
 
                             <Link

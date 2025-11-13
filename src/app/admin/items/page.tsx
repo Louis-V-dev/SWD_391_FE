@@ -24,8 +24,9 @@ import { Select } from '@/components/ui/Select';
 import AdminLayout from '@/components/layout/AdminLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import StatsCard from '@/components/ui/StatsCard';
-import { ItemsAPI } from '@/api';
+import { ItemsAPI, handleApiError } from '@/api';
 import { ItemSummaryResponse, ItemStatus } from '@/types';
+import { formatApiError } from '@/utils/errorMessages';
 
 export default function ItemsManagementPage() {
   const [items, setItems] = useState<ItemSummaryResponse[]>([]);
@@ -124,7 +125,13 @@ export default function ItemsManagementPage() {
       fetchStats();
     } catch (error) {
       console.error('Failed to delete item:', error);
-      alert('Failed to delete item');
+      const backendMessage = handleApiError(error);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/items',
+        'Failed to delete item. Please try again.'
+      );
+      alert(friendlyMessage);
     }
   };
 

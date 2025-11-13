@@ -1,19 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users, 
-  Search,
-  Filter,
   UserPlus,
   MoreVertical,
   Edit,
-  Trash2,
   Ban,
   CheckCircle,
-  Mail,
-  Calendar,
   TrendingUp,
   UserCheck,
   UserX,
@@ -22,12 +17,18 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import AdminLayout from '@/components/layout/AdminLayout';
 import SearchBar from '@/components/ui/SearchBar';
 import StatsCard from '@/components/ui/StatsCard';
 import { useUserManagement } from '@/hooks/useUsers';
+import { adjustPoints } from '@/api/points';
+import type { User } from '@/types/domains/users';
+import { UserDetailModal } from '@/components/users/UserDetailModal';
+import { AdjustPointsModal } from '@/components/users/AdjustPointsModal';
+import { BanUserModal } from '@/components/users/BanUserModal';
+import { handleApiError } from '@/api';
+import { formatApiError } from '@/utils/errorMessages';
 
 export default function UsersManagementPage() {
   const [page, setPage] = useState(0);
@@ -35,8 +36,19 @@ export default function UsersManagementPage() {
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  
-  const { summary, loading, banUser, unbanUser, activateUser, deactivateUser, verifyUser } = useUserManagement(page, 20);
+  const [detailUserId, setDetailUserId] = useState<string | null>(null);
+  const [adjustPointsUser, setAdjustPointsUser] = useState<User | null>(null);
+  const [banUserTarget, setBanUserTarget] = useState<User | null>(null);
+
+  const { summary, loading, banUser, unbanUser, activateUser, deactivateUser, verifyUser, refetch } = useUserManagement(page, 20);
+  const usersList: User[] = summary?.users?.content ?? [];
+  const detailUser = detailUserId ? usersList.find((user) => user.userId === detailUserId) ?? null : null;
+
+  useEffect(() => {
+    if (detailUserId && !loading && !detailUser) {
+      setDetailUserId(null);
+    }
+  }, [detailUserId, detailUser, loading]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -55,12 +67,19 @@ export default function UsersManagementPage() {
     }
   };
 
-  const handleBanUser = async (userId: string, reason: string) => {
+  const handleBanUser = async ({ userId, reason }: { userId: string; reason: string }) => {
     try {
-      await banUser(userId, reason || 'Violation of terms');
+      await banUser(userId, reason);
       setSelectedUser(null);
-    } catch (err: any) {
-      alert(err.message);
+      alert('User banned successfully.');
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/users',
+        'Failed to ban user. Please try again.'
+      );
+      throw new Error(friendlyMessage);
     }
   };
 
@@ -68,8 +87,14 @@ export default function UsersManagementPage() {
     try {
       await unbanUser(userId);
       setSelectedUser(null);
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/users',
+        'Failed to unban user. Please try again.'
+      );
+      alert(friendlyMessage);
     }
   };
 
@@ -77,18 +102,71 @@ export default function UsersManagementPage() {
     try {
       await verifyUser(userId);
       setSelectedUser(null);
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/users',
+        'Failed to verify user. Please try again.'
+      );
+      alert(friendlyMessage);
     }
   };
 
-  const filteredUsers = summary?.users?.content?.filter(user => {
+  const handleActivateUser = async (userId: string) => {
+    try {
+      await activateUser(userId);
+      setSelectedUser(null);
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/users',
+        'Failed to activate user. Please try again.'
+      );
+      alert(friendlyMessage);
+    }
+  };
+
+  const handleDeactivateUser = async (userId: string) => {
+    try {
+      await deactivateUser(userId);
+      setSelectedUser(null);
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/users',
+        'Failed to deactivate user. Please try again.'
+      );
+      alert(friendlyMessage);
+    }
+  };
+
+  const handleAdjustPoints = async ({ userId, amount, reason }: { userId: string; amount: number; reason: string }) => {
+    try {
+      await adjustPoints(userId, amount, reason);
+      await refetch();
+      alert('Points adjusted successfully.');
+      setSelectedUser(null);
+    } catch (err: unknown) {
+      const backendMessage = handleApiError(err);
+      const friendlyMessage = formatApiError(
+        backendMessage,
+        'admin/users',
+        'Failed to adjust points. Please try again.'
+      );
+      throw new Error(friendlyMessage);
+    }
+  };
+
+  const filteredUsers = usersList.filter(user => {
     const matchesSearch = !searchTerm || 
       user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.fullName?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesRole = selectedRole === 'all' || user.role.toLowerCase() === selectedRole.toLowerCase();
+    const matchesRole = selectedRole === 'all' || user.role === selectedRole;
     const matchesStatus = selectedStatus === 'all' || 
       (selectedStatus === 'active' && user.isActive) ||
       (selectedStatus === 'banned' && user.isBanned) ||
@@ -185,11 +263,10 @@ export default function UsersManagementPage() {
                   onChange={(e) => setSelectedRole(e.target.value)}
                   className="px-3 py-2 border border-input rounded-md bg-background"
                 >
-                  <option value="all">All Types</option>
-                  <option value="consumer">Consumer</option>
-                  <option value="collector">Collector</option>
-                  <option value="brand">Brand</option>
-                  <option value="moderator">Moderator</option>
+                  <option value="all">All Roles</option>
+                  <option value="USER">User</option>
+                  <option value="ADMIN">Admin</option>
+                  <option value="STAFF">Staff</option>
                 </select>
 
                 <select
@@ -277,7 +354,7 @@ export default function UsersManagementPage() {
                           <td className="py-4 px-4">
                             <div className="text-sm text-muted-foreground">
                               <p>{user.followersCount || 0} followers</p>
-                              <p>{user.listingsCount || 0} listings</p>
+                              <p>{user.itemsCount || 0} items</p>
                             </div>
                           </td>
                           <td className="py-4 px-4 text-sm text-muted-foreground">
@@ -316,8 +393,8 @@ export default function UsersManagementPage() {
                                     ) : (
                                       <button
                                         onClick={() => {
-                                          const reason = prompt('Enter reason for ban:');
-                                          if (reason) handleBanUser(user.userId, reason);
+                                          setBanUserTarget(user);
+                                          setSelectedUser(null);
                                         }}
                                         className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-muted flex items-center gap-2"
                                       >
@@ -326,11 +403,24 @@ export default function UsersManagementPage() {
                                       </button>
                                     )}
                                     <button
-                                      onClick={() => window.location.href = `/admin/users/${user.userId}`}
+                                      onClick={() => {
+                                        setDetailUserId(user.userId);
+                                        setSelectedUser(null);
+                                      }}
                                       className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2"
                                     >
                                       <Edit className="h-4 w-4" />
                                       View Details
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setAdjustPointsUser(user);
+                                        setSelectedUser(null);
+                                      }}
+                                      className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2"
+                                    >
+                                      <TrendingUp className="h-4 w-4" />
+                                      Adjust Points
                                     </button>
                                     <button
                                       onClick={() => window.location.href = `/profile/points?userId=${user.userId}`}
@@ -384,6 +474,30 @@ export default function UsersManagementPage() {
           </Card>
         </motion.div>
       </motion.div>
+      {detailUser && (
+        <UserDetailModal
+          user={detailUser}
+          onClose={() => setDetailUserId(null)}
+          onVerify={handleVerifyUser}
+          onBanClick={(user) => setBanUserTarget(user)}
+          onUnban={handleUnbanUser}
+          onAdjustPointsClick={(user) => setAdjustPointsUser(user)}
+          onActivate={handleActivateUser}
+          onDeactivate={handleDeactivateUser}
+        />
+      )}
+      <AdjustPointsModal
+        user={adjustPointsUser}
+        isOpen={Boolean(adjustPointsUser)}
+        onClose={() => setAdjustPointsUser(null)}
+        onSubmit={handleAdjustPoints}
+      />
+      <BanUserModal
+        user={banUserTarget}
+        isOpen={Boolean(banUserTarget)}
+        onClose={() => setBanUserTarget(null)}
+        onSubmit={handleBanUser}
+      />
     </AdminLayout>
   );
 }
