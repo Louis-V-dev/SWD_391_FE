@@ -5,7 +5,7 @@
  * Features: Multi-image upload, delete/edit messages, date separators, infinite scroll, themed UI
  */
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Suspense, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ChatAPI, { Conversation, ChatMessage } from '@/api/chat';
@@ -35,7 +35,7 @@ interface MessageGroup {
   message?: ChatMessage;
 }
 
-export default function ChatPage() {
+function ChatPageContent() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1222,6 +1222,26 @@ export default function ChatPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background">
+          <Header />
+          <div className="flex items-center justify-center py-32">
+            <div className="text-center text-muted-foreground">
+              Loading chat experience...
+            </div>
+          </div>
+          <Footer />
+        </div>
+      }
+    >
+      <ChatPageContent />
+    </Suspense>
   );
 }
 
