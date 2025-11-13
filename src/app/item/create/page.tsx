@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -50,7 +50,7 @@ const createItemSchema = z.object({
 
 type CreateItemFormData = z.infer<typeof createItemSchema>;
 
-export default function CreateItemPage() {
+function CreateItemPageContent() {
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -562,5 +562,23 @@ export default function CreateItemPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function CreateItemPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex flex-col">
+          <Header />
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+          <Footer />
+        </div>
+      }
+    >
+      <CreateItemPageContent />
+    </Suspense>
   );
 }
